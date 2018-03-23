@@ -27,8 +27,8 @@ If no AST generator is available, you can also extract regexes with a custom "pa
 It's easy!
 
 1. Identify a not-yet-supported programming language.
-2. Accept as input a file name whose contents are a JSON object with key 'sourcePath'.
-3. Statically extract all regexes in the file named 'sourcePath'. If a regex is dynamically defined then use the special value "DYNAMIC-PATTERN".
+2. Accept as input a file name whose contents are a JSON object with key `sourcePath`.
+3. Statically extract all regexes in the file named `sourcePath`. If a regex is dynamically defined then use the special value "DYNAMIC-PATTERN".
 4. Emit (to STDOUT) in JSON an object with:
     - key `couldParse` (0 or 1)
 		- if `couldParse`, a key `regexes` with value an array whose elements are regex instances: objects with keys: 'regex'

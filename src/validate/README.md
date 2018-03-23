@@ -31,7 +31,7 @@ It builds a regex from this pattern and tests it against the string.
 It's easy!
 
 1. Identify a not-yet-supported programming language.
-2. Accept as input a file name whose contents are a JSON object with keys 'regex' and 'string'.
+2. Accept as input a file name whose contents are a JSON object with keys `regex` and `string`.
 3. Build a regex and match it against the string.
 4. Exit.
 
