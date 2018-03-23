@@ -17,13 +17,13 @@ Scanning a project has three phases:
 
 ## Regex extraction
 
-TODO.
+In this phase regexes are statically extracted from the project's source code.
+See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/extract/README.md) for more details.
 
 ## Vulnerability detection
 
-TODO.
-
-We use ...
+In this phase the regexes are tested for vulnerability.
+See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/detect/README.md) for more details.
 
 1.
 2.
@@ -52,3 +52,9 @@ If you want to enhance the scan, here are the instructions.
 
 1. If you want to add support for a new language, here are the instructions for [regex extraction](https://github.com/davisjam/vuln-regex-detector/blob/master/src/extract/README.md#how-do-i-add-a-new-extractor) and for [vulnerability validation](https://github.com/davisjam/vuln-regex-detector/blob/master/src/validate/README.md#how-do-i-add-a-new-validator).
 2. If you want to add a new vulnerability detector, see the [instructions](https://github.com/davisjam/vuln-regex-detector/blob/master/src/detect/README.md).
+
+# Related projects
+
+1. https://github.com/olivo/redos-detector
+2. https://github.com/substack/safe-regex
+3. https://github.com/google/re2
