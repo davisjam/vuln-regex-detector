@@ -1,6 +1,6 @@
 # Summary
 
-This project provides tools to scan your projects for "vulnerable regexes".
+This project provides tools to scan your projects for vulnerable regexes.
 These are regexes that could lead to [catastrophic backtracking](https://www.regular-expressions.info/catastrophic.html).
 
 # Getting started
@@ -25,20 +25,33 @@ See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/extra
 In this phase the regexes are tested for vulnerability.
 See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/detect/README.md) for more details.
 
-1.
-2.
-3.
-
 ## Vulnerability validation
+
+In this phase the results of the vulnerability tests are validated.
 
 The vulnerability detectors are not always correct.
 Happily, each emits evil input it believes will trigger catastrophic backtracking.
 We have *vulnerability validators* to check their recommendation in the language(s) in which you will use the regexes.
 
+# Caveats
+
+In brief, let's review how the analysis works:
+
+1. Identify all statically-declared regexes used anywhere in your source code.
+2. Ask detectors what they think about each regex.
+3. For any regexes that any detectors flagged as vulnerable, validate in the appropriate language.
+
+Here are the shortcomings of the analysis.
+
+1. **Regex extraction**: It is *static*. If you dynamically define regexes (e.g. `new Regex(patternAsAVariable)`) we do not know about it.
+2. **Regex extraction**: It is *input agnostic*, so it detects vulnerable regexes whether or not they are currently exploitable. As long as a vulnerable regex is only used on trusted input, it will not be exploited. If a vulnerable regex is only used in test code, then it is not currently a problem. Judge for yourself how comfortable you feel about keeping non-exploitable vulnerable regexes in your code.
+3. **Vulnerability detection**: It is *detector dependent*. All of the detectors have their flaws, and none has received careful testing. Thanks to the validation stage we only report truly vulnerable regexes (high precision/no false positives), but there may be unreported vulnerabilities (risk of low recall/false negatives) e.g. due to bugs or timeouts in the detection phase.
+
 # Supported OSes
 
-This code works on Ubuntu 16.
-Open an issue if you want other OSes and we can discuss.
+The configuration code works on Ubuntu 16.
+Everything else should work on any Linux.
+Open an issue if you want other distros/OSes and we can discuss.
 
 # Contributing
 
