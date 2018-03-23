@@ -7,7 +7,7 @@ There is a driver that accepts:
 - regex
 - evil input formula
 - number of pumps
-- timeout
+- time limit
 
 and feeds this into the validator for the appropriate languages.
 It prints a summary in JSON to STDOUT.

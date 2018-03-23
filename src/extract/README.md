@@ -31,4 +31,4 @@ It's easy!
 3. Statically extract all regexes in the file named `sourcePath`. If a regex is dynamically defined then use the special value "DYNAMIC-PATTERN".
 4. Emit (to STDOUT) in JSON an object with:
     - key `couldParse` (0 or 1)
-		- if `couldParse`, a key `regexes` with value an array whose elements are regex instances: objects with keys: 'regex'
+    - if `couldParse`, a key `regexes` with value an array whose elements are regex instances: objects with keys: `regex`
