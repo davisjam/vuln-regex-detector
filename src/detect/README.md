@@ -1,6 +1,6 @@
 # Summary
 
-This directory contains "vulnerable regex detectors".
+This directory contains vulnerable regex detectors.
 These detectors identify regexes that are vulnerable to catastrophic backtracking.
 
 There is a driver that accepts:
@@ -37,7 +37,7 @@ The degree of backtracking can be polynomial (e.g. `O(n^2)`) or in the worst cas
 # Which detectors do we use?
 
 We use detectors that propose evil input.
-This excludes heuristics like star height, as popularized by the (safe-regex)[https://github.com/substack/safe-regex] project.
+This excludes heuristics like star height, as popularized by the [safe-regex](https://github.com/substack/safe-regex) project.
 
 These are the detectors we use:
 
