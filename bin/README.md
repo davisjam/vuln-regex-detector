@@ -1,6 +1,6 @@
 # Summary
 
-Scripts will drive the analysis for different granularities of inputs.
+Scripts to drive vulnerable regex analysis for different granularities of inputs.
 
 # Scripts
 
