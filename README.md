@@ -35,11 +35,6 @@ The vulnerability detectors are not always correct.
 Happily, each emits evil input it believes will trigger catastrophic backtracking.
 We have *vulnerability validators* to check their recommendation in the language(s) in which you will use the regexes.
 
-### Why might they be incorrect?
-
-1. Detector might assume behavior of a regex engine that is true in some implementations but not in the regex engine of your language(s).
-2. Detector might be buggy.
-
 # Supported OSes
 
 This code works on Ubuntu 16.
@@ -55,5 +50,5 @@ Contributions welcome!
 
 If you want to enhance the scan, here are the instructions.
 
-1. If you want to add support for a new language, here are the instructions for [regex extraction](TODO) and for [vulnerability validation](TODO).
-2. If you want to add a new vulnerability detector, see the [instructions]().
+1. If you want to add support for a new language, here are the instructions for [regex extraction](https://github.com/davisjam/vuln-regex-detector/blob/master/src/extract/README.md) and for [vulnerability validation](https://github.com/davisjam/vuln-regex-detector/blob/master/src/validate/README.md).
+2. If you want to add a new vulnerability detector, see the [instructions](https://github.com/davisjam/vuln-regex-detector/blob/master/src/detect/README.md).
