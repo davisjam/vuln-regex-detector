@@ -50,5 +50,5 @@ Contributions welcome!
 
 If you want to enhance the scan, here are the instructions.
 
-1. If you want to add support for a new language, here are the instructions for [regex extraction](https://github.com/davisjam/vuln-regex-detector/blob/master/src/extract/README.md) and for [vulnerability validation](https://github.com/davisjam/vuln-regex-detector/blob/master/src/validate/README.md).
+1. If you want to add support for a new language, here are the instructions for [regex extraction](https://github.com/davisjam/vuln-regex-detector/blob/master/src/extract/README.md#how-do-i-add-a-new-extractor) and for [vulnerability validation](https://github.com/davisjam/vuln-regex-detector/blob/master/src/validate/README.md#how-do-i-add-a-new-validator).
 2. If you want to add a new vulnerability detector, see the [instructions](https://github.com/davisjam/vuln-regex-detector/blob/master/src/detect/README.md).
