@@ -2,7 +2,7 @@
 
 This directory contains validators for different programming languages (viz. their regex engines).
 
-There is one master driver that accepts:
+There is a driver that accepts:
 - language(s) of interest
 - regex
 - evil input formula
@@ -11,6 +11,8 @@ There is one master driver that accepts:
 
 and feeds this into the validator for the appropriate languages.
 It prints a summary in JSON to STDOUT.
+
+See usage message for details.
 
 # How does a validator work?
 
@@ -33,4 +35,4 @@ It's easy!
 3. Build a regex and match it against the string.
 4. Exit.
 
-If your program hangs on evil input, the master driver will time it out and report it.
+If your program hangs on evil input, the driver will time it out and report it.
