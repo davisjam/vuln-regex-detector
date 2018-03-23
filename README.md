@@ -5,7 +5,9 @@ These are regexes that could lead to [catastrophic backtracking](https://www.reg
 
 # Getting started
 
-TODO.
+1. Run the `configure` script to install dependencies and build the detectors.
+2. Set the env. variable `VULN_REGEX_DETECTOR_ROOT` to wherever you cloned the repo.
+3. Use the scripts in `bin`. See their [README](https://github.com/davisjam/vuln-regex-detector/blob/master/src/bin/README.md) for details.
 
 # How it works
 
