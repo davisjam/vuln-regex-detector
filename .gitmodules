@@ -1,0 +1,3 @@
+[submodule "src/detect/weideman-RegexStaticAnalysis"]
+	path = src/detect/weideman-RegexStaticAnalysis
+	url = https://github.com/NicolaasWeideman/RegexStaticAnalysis
