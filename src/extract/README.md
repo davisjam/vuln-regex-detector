@@ -3,13 +3,11 @@
 This directory contains programs to extract the *statically declared regexes* from a program
 written any of the supported languages.
 
-It also contains a driver that accepts:
-- program name
+It also contains a driver `extract-regexps.pl` that accepts a JSON file with:
+- file (program name)
 - [language]
 
 If language is not specified, the driver attempts to discover the correct language.
-
-See usage message for details.
 
 # How does an extractor work?
 
@@ -27,8 +25,10 @@ If no AST generator is available, you can also extract regexes with a custom "pa
 It's easy!
 
 1. Identify a not-yet-supported programming language.
-2. Accept as input a file name whose contents are a JSON object with key `sourcePath`.
-3. Statically extract all regexes in the file named `sourcePath`. If a regex is dynamically defined then use the special value "DYNAMIC-PATTERN".
+2. Write a program that accepts as input a file name.
+3. Statically extract all regexes in this file. If a regex is dynamically defined then use the special value "DYNAMIC-PATTERN".
 4. Emit (to STDOUT) in JSON an object with:
+    - key `file` (name)
     - key `couldParse` (0 or 1)
-    - if `couldParse`, a key `regexes` with value an array whose elements are regex instances: objects with keys: `regex`
+    - if `couldParse`, a key `regexes` with value an array whose elements are regex instances: objects with keys: `pattern` [`flag`]
+5. Add appropriate routing to `extract-regexps.pl`.
