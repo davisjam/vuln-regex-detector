@@ -25,9 +25,8 @@
 #   Must define ECOSYSTEM_REGEXP_PROJECT_ROOT
 #
 # Output:
-#   Prints a JSON object with keys: filename LoC regexps[]
+#   Prints a JSON object with keys: filename regexps[]
 #     filename is the path provided
-#     LoC is the 'code' field computed by cloc
 #     regexps is an array of objects, each with keys: funcName pattern flags
 #       funcName is the re module function being invoked
 #       pattern and flags are each either a string or 'DYNAMIC-{PATTERN|FLAGS}'
@@ -286,14 +285,6 @@ class ASTWalkerForRegexps(ast.NodeVisitor):
     # Recurse
     ast.NodeVisitor.generic_visit(self, node)
 
-def countLOC(cloc, sourcefile):
-  out = subprocess.check_output([cloc, sourcefile])
-  m = re.search('Python\s+1\s+\d+\s+\d+\s+(\d+)', out.decode('utf-8'))
-  if (m):
-    return int(m.group(1))
-  else:
-    return -1
-
 def main():
   # Usage
   if len(sys.argv) != 2:
@@ -305,16 +296,7 @@ def main():
     log('Error, must define env var ECOSYSTEM_REGEXP_PROJECT_ROOT')
     sys.exit(1)
 
-  cloc = os.environ.get('ECOSYSTEM_REGEXP_PROJECT_ROOT') + '/deps/cloc/cloc'
-  if (not os.path.isfile(cloc)):
-    log('Error, could not find {}'.format(cloc))
-    sys.exit(1)
-
   sourcefile = sys.argv[1]
-
-  # Count LoC
-  LoC = countLOC(cloc, sourcefile)
-  log('{} has {} LoC'.format(sourcefile, LoC))
 
   # Read file and prep an AST.
   try:
@@ -326,7 +308,6 @@ def main():
       walker.visit(root)
   
       fileInfo = { 'filename': sourcefile,
-                   'LoC': LoC,
                    'regexps': [regexp.__dict__ for regexp in walker.getRegexps()]
                  }
       sys.stdout.write(json.dumps(fileInfo) + '\n')
