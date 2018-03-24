@@ -35,6 +35,8 @@ The vulnerability detectors are not always correct.
 Happily, each emits evil input it believes will trigger catastrophic backtracking.
 We have *vulnerability validators* to check their recommendation in the language(s) in which you will use the regexes.
 
+See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/validate/README.md) for more details.
+
 # Caveats
 
 In brief, let's review how the analysis works:
