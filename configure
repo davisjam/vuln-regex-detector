@@ -1,0 +1,165 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+if (not defined $ENV{VULN_REGEX_DETECTOR_ROOT}) {
+  die "Error, you must define VULN_REGEX_DETECTOR_ROOT\n";
+}
+
+# Linux or bust
+my $os = $^O;
+if ($os ne "linux") {
+  die "Error, $os is unsupported. Only works on Linux\n";
+}
+
+# Ubuntu or bust
+my $osRelease = `cat /etc/os-release 2>/dev/null`;
+if ($osRelease !~ m/NAME="Ubuntu"/i) {
+  die "Error, only Ubuntu is supported. Your machine is:\n$osRelease\n";
+}
+
+&log("Configuring repo");
+
+# Install dependencies
+my @miscPackages_ubuntu = ("zip", "unzip", "make", "git");
+my @rxxr2Packages_ubuntu = ("ocaml");
+my @wustholzPackages_ubuntu = ("default-jdk");
+my @dynamicAnalysisPackages_ubuntu = ("php-cli", "ruby");
+my @requiredPackages_ubuntu = (@miscPackages_ubuntu, @rxxr2Packages_ubuntu, @wustholzPackages_ubuntu, @dynamicAnalysisPackages_ubuntu);
+
+&log("Installing dependencies");
+&chkcmd("sudo apt-get install -y @requiredPackages_ubuntu");
+
+&log("Initializing/updating submodules");
+&chkcmd("git submodule update --init --recursive");
+
+&log("Configuring detectors");
+&configureDetectors();
+
+&log("Configuring node modules");
+my @nodeModuleDirs = map { "$ENV{VULN_REGEX_DETECTOR_ROOT}/$_" } ("src/extract/src/js/");
+for my $dir (@nodeModuleDirs) {
+  &chkcmd("cd $dir; npm install; cd -");
+}
+
+&log("Configuration complete");
+exit 0;
+
+####################
+# Configuration steps
+####################
+
+# Backup: https://github.com/davisjam/redos-detector-backup
+sub configureDetectors {
+  &configureRXXR2();
+  &configureWustholz();
+  &configureWeideman();
+
+  return;
+}
+
+sub configureRXXR2 {
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect" or die "Error, chdir failed: $!\n";
+
+  my $dir = "rathnayake-rxxr2";
+  my $file = "$dir/scan.bin";
+
+  if (-d $dir) {
+    &log("rxxr2 already installed");
+  }
+  else {
+    &log("Setting up rxxr2");
+
+    &log("Downloading");
+    &chkcmd("wget http://www.cs.bham.ac.uk/~hxt/research/rxxr2/rxxr2.zip -O rxxr2.zip");
+    &chkcmd("unzip rxxr2.zip"); # Unzips to 'rxxr/'
+
+    &log("Building");
+    &chkcmd("cd rxxr/code; ./build.sh; cd -");
+
+    &log("Cleaning up");
+    &chkcmd("mv rxxr/code/scan.bin /tmp/RXXR2-INSTALL-scan.bin");
+    &chkcmd("rm -rf rxxr/");
+    &chkcmd("mkdir $dir");
+    &chkcmd("mv /tmp/RXXR2-INSTALL-scan.bin $file");
+    &chkcmd("rm rxxr2.zip");
+
+    if (not -f $file) {
+      die "Error, configuring rxxr2 failed: could not find $file\n";
+    }
+
+    &log("Configured rxxr2");
+  }
+
+  return;
+}
+
+sub configureWustholz {
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect" or die "Error, chdir failed: $!\n";
+
+  my $dir = "wuestholz-RegexCheck";
+  my $file = "$dir/regexcheck.jar";
+
+  if (-d $dir) {
+    &log("wuestholz already installed");
+  }
+  else {
+    &log("Setting up wuestholz");
+
+    &log("Downloading");
+    &chkcmd("wget http://www.wuestholz.com/downloads/regexcheck.zip -O regexcheck.zip");
+    &chkcmd("unzip regexcheck.zip");
+
+    &log("Renaming");
+    &chkcmd("mv regexcheck-2016-09-09 $dir");
+    &chkcmd("rm regexcheck.zip");
+
+    if (not -f $file) {
+      die "Error, configuring Wustholz failed: could not find $file\n";
+    }
+
+    &log("Configured wuestholz");
+  }
+
+  return;
+}
+
+sub configureWeideman {
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect" or die "Error, chdir failed: $!\n";
+
+  my $dir = "weideman-RegexStaticAnalysis";
+  my $file = "$dir/RegexStaticAnalysis.jar";
+
+  &chkcmd("cd $dir; make exejar; cd -");
+  if (not -f $file) {
+    die "Error, configuring weideman failed: could not find $file\n";
+  }
+
+  &log("Configured weideman");
+
+  return;
+}
+
+####################
+# Utility
+####################
+
+sub chkcmd {
+  my ($cmd) = @_;
+
+  &log("$cmd");
+  my $out = `$cmd`;
+
+  my $rc = $? >> 8;
+  if ($rc) {
+    die "Error, $cmd gave rc $rc:\n$out\n";
+  }
+
+  return $out;
+}
+
+sub log {
+  my ($msg) = @_;
+  print STDOUT "$msg\n";
+}
