@@ -51,7 +51,7 @@ Here are the shortcomings of the analysis.
 
 # Supported OSes
 
-The configuration code works on Ubuntu 16.
+The configuration code works on Ubuntu (tested on Ubuntu 16).
 Everything else should work on any Linux.
 Open an issue if you want other distros/OSes and we can discuss.
 
