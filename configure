@@ -25,7 +25,7 @@ if ($osRelease !~ m/NAME="Ubuntu"/i) {
 my @miscPackages_ubuntu = ("zip", "unzip", "make", "git");
 my @rxxr2Packages_ubuntu = ("ocaml");
 my @wustholzPackages_ubuntu = ("default-jdk");
-my @dynamicAnalysisPackages_ubuntu = ("php-cli", "ruby");
+my @dynamicAnalysisPackages_ubuntu = ("nodejs", "php-cli", "ruby");
 my @requiredPackages_ubuntu = (@miscPackages_ubuntu, @rxxr2Packages_ubuntu, @wustholzPackages_ubuntu, @dynamicAnalysisPackages_ubuntu);
 
 &log("Installing dependencies");
