@@ -3,13 +3,13 @@
 This directory contains validators for different programming languages (viz. their regex engines).
 
 There is a driver that accepts:
-- language(s) of interest
+- language of interest
 - regex
 - evil input formula
 - number of pumps
 - time limit
 
-and feeds this into the validator for the appropriate languages.
+and feeds this into the validator for the appropriate language.
 It prints a summary in JSON to STDOUT.
 
 See usage message for details.
