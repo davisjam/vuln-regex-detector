@@ -16,6 +16,13 @@ Input format: JSON object with keys:
 - \['detectVuln\_X'\]: where X is one of the fields for `detect-vuln.pl`.
 - 'validateVuln\_X': where X is one of the fields for `validate-vuln.pl`. Required: 'validateVuln\_nPumps', 'validateVuln\_timeLimit'.
 
+## `check-file.pl`
+
+Input format: JSON object with keys:
+- 'file': The name of the file whose regexes we should extract
+- \['extractRegexes\_X'\]: where X is one of the fields for `extract-regexes.pl`.
+- 'X': Parms for `check-regex.pl`.
+
 # Requirements
 
 1. Set the environment variable `VULN_REGEX_DETECTOR_ROOT` to the repo root.
