@@ -79,7 +79,7 @@ sub configureValidators {
 }
 
 sub configureRXXR2 {
-  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect" or die "Error, chdir failed: $!\n";
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors" or die "Error, chdir failed: $!\n";
 
   my $dir = "rathnayake-rxxr2";
   my $file = "$dir/scan.bin";
@@ -115,7 +115,7 @@ sub configureRXXR2 {
 }
 
 sub configureWustholz {
-  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect" or die "Error, chdir failed: $!\n";
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors" or die "Error, chdir failed: $!\n";
 
   my $dir = "wuestholz-RegexCheck";
   my $file = "$dir/regexcheck.jar";
@@ -145,7 +145,7 @@ sub configureWustholz {
 }
 
 sub configureWeideman {
-  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect" or die "Error, chdir failed: $!\n";
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors" or die "Error, chdir failed: $!\n";
 
   my $dir = "weideman-RegexStaticAnalysis";
   my $file = "$dir/RegexStaticAnalysis.jar";
