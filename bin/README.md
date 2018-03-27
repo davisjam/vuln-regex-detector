@@ -4,10 +4,17 @@ Scripts to drive vulnerable regex analysis for different granularities of inputs
 
 # Scripts
 
-1. `check-regex.pl`: Check a regex.
-2. `check-file.pl`: Check a file.
-3. `check-tree.pl`: Check a tree of files.
-4. `check-repo.pl`: Check a GitHub repo.
+1. `check-repo.pl`: Check a GitHub repo.
+2. `check-tree.pl`: Check a tree of files.
+3. `check-file.pl`: Check a file.
+4. `check-regex.pl`: Check a regex.
+
+## `check-repo.pl`
+
+Input format: JSON object with keys:
+- 'url': The root of the tree whose files we should test.
+- \['checkRepo\_type'\]': 'git', 'svn', etc. Otherwise we'll try all possibilities.
+- \['checkRepo\_timeout'\]: how long to wait before giving up on the clone, in seconds.
 
 ## `check-tree.pl`
 
