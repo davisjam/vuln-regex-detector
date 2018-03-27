@@ -2,12 +2,12 @@
 
 This directory contains validators for different programming languages (viz. their regex engines).
 
-There is a driver that accepts:
-- language of interest
-- regex
-- evil input formula
-- number of pumps
-- time limit
+The `validate-vuln.pl` driver accepts (in JSON):
+- 'language' (of interest)
+- 'pattern' (regex)
+- 'evilInput' (evil input formula)
+- 'nPumps' (number of pumps)
+- 'timeLimit' (time limit in seconds)
 
 and feeds this into the validator for the appropriate language.
 It prints a summary in JSON to STDOUT.
