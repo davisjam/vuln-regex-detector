@@ -28,6 +28,7 @@ if (!validQuery) {
 }
 
 // Try to match string against pattern.
+console.error(`matching: pattern /${query.pattern}/ inputStr: len ${query.input.length}`);
 var re = new RegExp(query.pattern);
 
 var matched = query.input.match(re);

@@ -17,21 +17,10 @@ function main() {
   $obj = json_decode($cont);
   my_log('obj');
 
-  // Compose evil input.
-  $queryString = '';
-  foreach ($obj->{'evilInput'}->{'pumpPairs'} as $pumpPair) {
-    $queryString .= $pumpPair->{'prefix'};
-    for ($i = 0; $i < $obj->{'nPumps'}; $i++) {
-      $queryString .= $pumpPair->{'pump'};
-    }
-  }
-  $queryString .= $obj->{'evilInput'}->{'suffix'};
-
   // Query regexp.
-  my_log('matching: Pattern /' . $obj->{'pattern'} . '/, nPumps ' . $obj->{'nPumps'} . ', queryString ' . $queryString); 
-  //$matched = preg_match('/' . $obj->{'pattern'} . '/', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!');
-  
-  $matched = @preg_match('/' . $obj->{'pattern'} . '/', $queryString);
+  my_log('matching: Pattern /' . $obj->{'pattern'} . '/, input: len ' . strlen($obj->{'input'}));
+
+  $matched = @preg_match('/' . $obj->{'pattern'} . '/', $obj->{'input'});
 
   // capture exception, if any.
   // will return OK even if there's compilation problems.
@@ -47,7 +36,7 @@ function main() {
 
   // Compose output.
   $obj->{'matched'} = $matched;
-  $obj->{'inputLength'} = strlen($queryString);
+  $obj->{'inputLength'} = strlen($obj->{'input'});
   $obj->{'exceptionString'} = $except;
   fwrite(STDOUT, json_encode($obj) . "\n");
 

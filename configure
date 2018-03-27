@@ -31,16 +31,25 @@ my @requiredPackages_ubuntu = (@miscPackages_ubuntu, @rxxr2Packages_ubuntu, @wus
 &log("Installing dependencies");
 &chkcmd("sudo apt-get install -y @requiredPackages_ubuntu");
 
+# Submodules
 &log("Initializing/updating submodules");
 &chkcmd("git submodule update --init --recursive");
 
+# Detectors
 &log("Configuring detectors");
 &configureDetectors();
 
+# Validators
+&log("Configuring validators");
+&configureValidators();
+
+# npm install my node modules
 &log("Configuring node modules");
-my @nodeModuleDirs = map { "$ENV{VULN_REGEX_DETECTOR_ROOT}/$_" } ("src/extract/src/js/");
+my @nodeModuleDirs = map { "$ENV{VULN_REGEX_DETECTOR_ROOT}/$_" } ("src/extract/src/javascript/");
 for my $dir (@nodeModuleDirs) {
-  &chkcmd("cd $dir; npm install; cd -");
+  chdir $dir or die "Error, chdir failed: $!\n";
+  &chkcmd("npm install");
+  chdir $ENV{VULN_REGEX_DETECTOR_ROOT} or die "Error, chdir failed: $!\n";
 }
 
 &log("Configuration complete");
@@ -56,6 +65,16 @@ sub configureDetectors {
   &configureWustholz();
   &configureWeideman();
 
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}" or die "Error, chdir failed: $!\n";
+  return;
+}
+
+sub configureValidators {
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate" or die "Error, chdir failed: $!\n";
+  chdir "test" or die "Error, chdir failed: $!\n";
+  &chkcmd("./gen-tests.pl");
+
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}" or die "Error, chdir failed: $!\n";
   return;
 }
 

@@ -11,24 +11,13 @@ end
 def main()
   # Assume args are correct.
   file = ARGV[0];
-  my_log(file);
 
   cont = File.read(file)
   obj = JSON.parse(cont)
 
-  # Compose evil input.
-  queryString = "";
-  for pumpPair in obj['evilInput']['pumpPairs'] 
-    queryString += pumpPair['prefix'];
-    1.upto(obj['nPumps']) do |i|
-      queryString += pumpPair['pump'];
-    end
-  end
-  queryString += obj['evilInput']['suffix']
-
   # Query regexp.
-  my_log("matching: pattern /" + obj['pattern'] + "/ nPumps #{obj['nPumps']} queryString " + queryString); 
-  if (/#{obj['pattern']}/ =~ queryString)
+  my_log("matching: pattern /" + obj['pattern'] + "/ input: length " + obj['input'].length.to_s)
+  if (/#{obj['pattern']}/ =~ obj['input'])
     matched = 1
   else
     matched = 0
@@ -36,7 +25,7 @@ def main()
 
   # Compose output.
   obj['matched'] = matched
-  obj['inputLength'] = queryString.length
+  obj['inputLength'] = obj['input'].length
   str = JSON.generate(obj)
   STDOUT.puts str + "\n"
 
