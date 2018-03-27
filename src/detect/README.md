@@ -3,16 +3,21 @@
 This directory contains vulnerable regex detectors.
 These detectors identify regexes that are vulnerable to catastrophic backtracking.
 
-There is a driver that accepts:
-- detector(s) of interest
-- regex
-- time limit
-- memory limit
+The `detect-vuln.pl` driver accepts:
+- 'pattern' (regex pattern to test)
+- \['detectors'\] (array of names of detectors to query)
+- \['timeLimit'\] (in seconds, time granted to each detector)
+- \['memoryLimit'\] (in MB, memory granted to each detector)
 
 and queries the requested detectors on the regex while applying per-detector time and memory limits.
 It prints a summary in JSON to STDOUT.
 
 See usage message for details.
+
+# Directory structure
+
+1. After you run `./configure`, the `src/detectors/` dir contains a built version of each detector.
+2. The `src/drivers` dir contains a driver for each detector. This layer lets `detect-vuln.pl` query detectors with a uniform interface.
 
 # What is catastrophic backtracking?
 
