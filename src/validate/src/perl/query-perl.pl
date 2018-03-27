@@ -20,7 +20,7 @@ my $query = decode_json(&readFile("file"=>$queryFile));
 
 # Check query is valid.
 my $validQuery = 1;
-my @requiredQueryKeys = ('pattern', 'evilInput', 'nPumps');
+my @requiredQueryKeys = ('pattern', 'input');
 for my $k (@requiredQueryKeys) {
   if (not defined($query->{$k})) {
     $validQuery = 0;
@@ -31,32 +31,11 @@ if (not $validQuery) {
   exit 1;
 }
 
-my @requiredEvilInputKeys = ('pumpPairs', 'suffix');
-for my $k (@requiredEvilInputKeys) {
-  if (not defined($query->{evilInput}->{$k})) {
-    $validQuery = 0;
-  }
-};
-if (!$validQuery) {
-  &log("Error, invalid query. evilInput needs keys <@requiredEvilInputKeys>. Got " . encode_json($query->{evilInput}));
-  exit 1;
-}
-
 &log("Query is valid");
 
-# Compose evilInputStr based on query.evilInput.
-my $evilInputStr = '';
-for my $pair (@{$query->{evilInput}->{pumpPairs}}) {
-  $evilInputStr .= $pair->{prefix};
-  for (my $i = 0; $i < $query->{nPumps}; $i++) {
-    $evilInputStr .= $pair->{pump};
-  }
-};
-$evilInputStr .= $query->{evilInput}->{suffix};
-
 # Try to match string against pattern.
-my $len = length($evilInputStr);
-&log("matching: pattern /$query->{pattern}/ nPumps $query->{nPumps} evilInputStr: len $len value <$evilInputStr>");
+my $len = length($query->{input});
+&log("matching: pattern /$query->{pattern}/ inputStr: len $len");
 
 my $matched;
 my $except = "NO_EXCEPT";
@@ -75,7 +54,7 @@ eval {
     }
   };
 
-  $matched = $evilInputStr =~ m/$query->{pattern}/;
+  $matched = $query->{input} =~ m/$query->{pattern}/;
 };
 
 # this just catches all warnings -- can we specify by anything other than string text?

@@ -1,0 +1,1 @@
+{"language":"LANGUAGE", "pattern":"(a+(a|b))+$", "evilInput": {"suffix":"!","pumpPairs":[{"prefix":"ab","pump":"aaab"}]}, "nPumps": 1000, "timeLimit": 1}
