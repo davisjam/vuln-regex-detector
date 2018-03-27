@@ -11,7 +11,7 @@ These are regexes that could lead to [catastrophic backtracking](https://www.reg
 
 # How it works
 
-Scanning a project has three phases:
+Scanning a project has three stages:
 
 1. Regex extraction
 2. Vulnerability detection
@@ -19,23 +19,30 @@ Scanning a project has three phases:
 
 ## Regex extraction
 
-In this phase regexes are statically extracted from the project's source code.
+In this stage regexes are statically extracted from the project's source code.
 See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/extract/README.md) for more details.
 
 ## Vulnerability detection
 
-In this phase the regexes are tested for vulnerability.
+In this stage the regexes are tested for vulnerability.
 See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/detect/README.md) for more details.
 
 ## Vulnerability validation
 
-In this phase the results of the vulnerability tests are validated.
+In this stage the results of the vulnerability tests are validated.
 
 The vulnerability detectors are not always correct.
 Happily, each emits evil input it believes will trigger catastrophic backtracking.
 We have *vulnerability validators* to check their recommendation in the language(s) in which you will use the regexes.
 
 See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/validate/README.md) for more details.
+
+## Pipelining
+
+1. The extraction stage produces a list of regexes. Each regex should be fed to the detection stage.
+2. The detection stage produces evilInput from each detector. Each evilInput should be fed in turn to the validation phsae.
+
+The scripts in `bin/` implement this pipeline.
 
 # Caveats
 
@@ -49,7 +56,7 @@ Here are the shortcomings of the analysis.
 
 1. **Regex extraction**: It is *static*. If you dynamically define regexes (e.g. `new Regex(patternAsAVariable)`) we do not know about it.
 2. **Regex extraction**: It is *input agnostic*, so it detects vulnerable regexes whether or not they are currently exploitable. As long as a vulnerable regex is only used on trusted input, it will not be exploited. If a vulnerable regex is only used in test code, then it is not currently a problem. Judge for yourself how comfortable you feel about keeping non-exploitable vulnerable regexes in your code.
-3. **Vulnerability detection**: It is *detector dependent*. All of the detectors have their flaws, and none has received careful testing. Thanks to the validation stage we only report truly vulnerable regexes (high precision/no false positives), but there may be unreported vulnerabilities (risk of low recall/false negatives) e.g. due to bugs or timeouts in the detection phase.
+3. **Vulnerability detection**: It is *detector dependent*. All of the detectors have their flaws, and none has received careful testing. Thanks to the validation stage we only report truly vulnerable regexes (high precision/no false positives), but there may be unreported vulnerabilities (risk of low recall/false negatives) e.g. due to bugs or timeouts in the detection stage.
 
 # Supported OSes
 
