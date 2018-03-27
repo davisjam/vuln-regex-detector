@@ -73,6 +73,7 @@ my $tmpFile = "/tmp/validate-vuln-$$.json";
 my $validator = $language2validator{$json->{language}};
 
 my ($rc, $out) = &cmd("timeout $json->{timeLimit}s $validator $tmpFile");
+unlink $tmpFile;
 my $timedOut = ($rc eq 124) ? 1 : 0;
 
 my $result = $json;
