@@ -34,9 +34,6 @@ if (scalar(@ARGV) != 1) {
 }
 
 my $pythonFile = $ARGV[0];
-if ($pythonFile !~ m/\.py$/i) {
-  die "Error, pythonFile does not end in .py: $pythonFile\n";
-}
 
 my ($rc, $out);
 # Try python2
