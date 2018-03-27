@@ -14,6 +14,9 @@ use warnings;
 
 use JSON::PP;
 
+# Globals.
+my $UNKNOWN_LANGUAGE = "UNKNOWN_LANGUAGE";
+
 # Check dependencies.
 
 if (not defined $ENV{VULN_REGEX_DETECTOR_ROOT}) {
@@ -21,14 +24,15 @@ if (not defined $ENV{VULN_REGEX_DETECTOR_ROOT}) {
 }
 
 # Map extension to regexp extractor
+my $pref = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/extract/src";
 my %language2extractor = (
-  "javascript" => "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/extract/src/javascript/extract-regexps.js",
-  "python"     => "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/extract/src/python/python-extract-regexps-wrapper.pl",
+  "javascript" => "$pref/javascript/extract-regexps.js",
+  "python"     => "$pref/python/python-extract-regexps-wrapper.pl",
 );
 
-for my $ext (keys %language2extractor) {
-  if (not -x $language2extractor{$ext}) {
-    die "Error, could not find regexp extractor for extension $ext: not executable <$language2extractor{$ext}>\n";
+for my $lang (keys %language2extractor) {
+  if (not -x $language2extractor{$lang}) {
+    die "Error, could not find regexp extractor for lang $lang: not executable <$language2extractor{$lang}>\n";
   }
 }
 
@@ -50,40 +54,82 @@ for my $key ("file") {
   }
 }
 
-# If no language, use extension
+# If no language, try to figure it out.
 my $language = $json->{language};
 if (not $language) {
-  if ($json->{file} =~ m/\.(\w+)$/) {
-    my $extension = $1;
-    $language = &extension2language($extension);
-  }
-  else {
-    die "File $json->{file} has no extension, and no language was provided.\n";
+  $language = &determineLanguage($json->{file});
+  if ($language eq $UNKNOWN_LANGUAGE) {
+    die "Error, could not discover language of $json->{file}\n";
   }
 }
 
-# Invoke the appropriate extractor
+# Invoke the appropriate extractor.
 my $extractor = $language2extractor{$language};
 if ($extractor and -x $extractor) {
   print STDERR "$extractor '$json->{file}'\n";
-  exec($extractor, $json->{file}); # Goodbye
-  die "Error, couldn't exec $extractor: $!\n";
+  my $result = decode_json(`$extractor '$json->{file}' 2>/dev/null`);
+  # Add the language to the output to simplify pipelining.
+  $result->{language} = $language;
+  print STDOUT encode_json($result) . "\n";
 }
 else {
-  die "Error, no extension found on file <$json->{file}>\n";
+  die "Error, no extractor for $language\n";
 }
 
 ######################
 
+sub determineLanguage {
+  my ($file) = @_;
+
+  my $language = $UNKNOWN_LANGUAGE;
+
+  # File extension.
+  if ($file =~ m/\.(\w+)$/) {
+    my $extension = $1;
+    $language = &extension2language($extension);
+  }
+  # Did it work?
+  if ($language ne $UNKNOWN_LANGUAGE) {
+    return $language;
+  }
+
+  # Check the 'file' command's guess.
+  my ($rc, $out) = &cmd("file $file");
+  #print "rc $rc out $out\n";
+  if ($rc eq 0) {
+    if ($out =~ m/(\s|\/)node(js)?\s/i) {
+      $language = "javascript";
+    }
+    elsif ($out =~ m/\sPython\s/i) {
+      $language = "python";
+    }
+  }
+  # Did it work?
+  if ($language ne $UNKNOWN_LANGUAGE) {
+    return $language;
+  }
+
+  return $language;
+}
+
 sub extension2language {
   my ($ext) = @_;
 
+  my $language = $UNKNOWN_LANGUAGE;
   if (lc $ext eq "js") {
-    return "javascript"};
+    $language = "javascript";
   }
   elsif (lc $ext eq "py") {
-    return "python";
+    $language = "python";
   }
 
-  die "Error, unsupported extension $ext\n";
+  return $language;
+}
+
+sub cmd {
+  my ($cmd) = @_;
+  my $out = `$cmd`;
+  my $rc = $? >> 8;
+
+  return ($rc, $out);
 }

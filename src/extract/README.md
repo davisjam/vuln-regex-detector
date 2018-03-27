@@ -3,7 +3,7 @@
 This directory contains programs to extract the *statically declared regexes* from a program
 written any of the supported languages.
 
-It also contains a driver `extract-regexps.pl` that accepts a JSON file with:
+The driver `extract-regexes.pl` accepts a JSON file with:
 - file (program name)
 - [language]
 
