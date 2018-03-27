@@ -17,22 +17,6 @@ if (not defined $ENV{VULN_REGEX_DETECTOR_ROOT}) {
   die "Error, VULN_REGEX_DETECTOR_ROOT must be defined\n";
 }
 
-# detectors
-my @detectors = &getDetectors();
-
-# Check environment-variable parms
-my @DETECTORS = map { $_->{name} } @detectors;
-if (defined($ENV{DETECTORS})) {
-  @DETECTORS = split(",", $ENV{DETECTORS});
-}
-
-@detectors = grep { &listContains(\@DETECTORS, $_->{name}) } @detectors;
-if (not @detectors) {
-  die "Error, no detectors matched names <@DETECTORS>\n";
-}
-my @names = map { $_->{name} } @detectors;
-&log("Using detectors <@names>");
-
 # Check args.
 if (scalar(@ARGV) != 1) {
   die "Usage: $0 pattern-query.json\n";
@@ -55,6 +39,17 @@ for my $k (@keys) {
   }
 }
 
+# Which detectors should we use?
+my @DETECTORS = &getDetectors();
+if (defined $query->{detectors}) {
+  @DETECTORS = grep { &listContains($query->{detectors}, $_->{name}) } @DETECTORS;
+  if (not @DETECTORS) {
+    die "Error, no detectors matched names <@{$query->{detectors}}>\n";
+  }
+}
+my @detectorNames = map { $_->{name} } @DETECTORS;
+&log("Using detectors <@detectorNames>");
+
 # Define limits on each detector.
 my $ONE_MB_IN_BYTES = 1*1024*1024;
 my $memoryLimitInBytes = (defined $query->{memoryLimit}) ? int($query->{memoryLimit}) * $ONE_MB_IN_BYTES : -1;
@@ -65,7 +60,7 @@ my $ulimitMemory = (defined $query->{memoryLimit}) ? "ulimit -m $memoryLimitInBy
 # Run each detector. Can re-use the input file.
 my @detectorOpinions;
 &log("Applying detectors to pattern /$query->{pattern}/");
-for my $d (@detectors) {
+for my $d (@DETECTORS) {
   &log("Querying detector $d->{name}");
   my $t0 = [gettimeofday];
   my $stderrFile = "/tmp/detect-vuln-$$-stderr";
