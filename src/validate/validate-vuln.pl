@@ -17,12 +17,13 @@ if (not defined $ENV{VULN_REGEX_DETECTOR_ROOT}) {
 }
 
 # Map extension to validator
+my $pref = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src";
 my %language2validator = (
-  "javascript" => "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/javascript/query-node.js",
-  "python"     => "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/python/query-python.py",
-  "php"        => "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/php/query-php.php",
-  "ruby"       => "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/ruby/query-ruby.rb",
-  "perl"       => "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/perl/query-perl.pl",
+  "javascript" => "$pref/javascript/query-node.js",
+  "python"     => "$pref/python/query-python.py",
+  "php"        => "$pref/php/query-php.php",
+  "ruby"       => "$pref/ruby/query-ruby.rb",
+  "perl"       => "$pref/perl/query-perl.pl",
 );
 
 for my $ext (keys %language2validator) {
