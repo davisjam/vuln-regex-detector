@@ -13,8 +13,9 @@ Scripts to drive vulnerable regex analysis for different granularities of inputs
 
 Input format: JSON object with keys:
 - 'url': The root of the tree whose files we should test.
-- \['checkRepo\_type'\]': 'git', 'svn', etc. Otherwise we'll try all possibilities.
-- \['checkRepo\_timeout'\]: how long to wait before giving up on the clone, in seconds.
+- \['cloneRepo\_type'\]': 'git', 'svn', etc. Otherwise we'll try all possibilities.
+- \['cloneRepo\_timeout'\]: how long to wait before giving up on the clone, in seconds.
+- \['X'\]: Parms for `check-tree.pl`
 
 ## `check-tree.pl`
 
@@ -27,7 +28,7 @@ Input format: JSON object with keys:
 Input format: JSON object with keys:
 - 'file': The name of the file whose regexes we should extract.
 - \['extractRegexes\_X'\]: where X is one of the fields for `extract-regexes.pl`.
-- 'X': Parms for `check-regex.pl`.
+- \['X'\]: Parms for `check-regex.pl`.
 
 ## `check-regex.pl`
 
@@ -36,6 +37,9 @@ Input format: JSON object with keys:
 - \['detectVuln\_X'\]: where X is one of the fields for `detect-vuln.pl`.
 - 'validateVuln\_X': where X is one of the fields for `validate-vuln.pl`.
 
+## Defaults
+
+These scripts set appropriate limits by default, e.g. on `detectVuln\_memoryLimit` (8GB) and `detectVuln\_timeLimit` (60 seconds).
 
 # Requirements
 

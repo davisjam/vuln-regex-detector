@@ -40,19 +40,27 @@ for my $key ("url") {
   }
 }
 
+my %defaults = ("cloneRepo_timeout" => 60*60*24, # 1 day in seconds, basically forever
+               );
+for my $key (keys %defaults) {
+  if (not defined $query->{$key}) {
+    &log("Using default for $key: $defaults{$key}");
+    $query->{$key} = $defaults{$key};
+  }
+}
+
 my $tmpFile = "/tmp/check-repo-$$.json";
+my $progressFile = "/tmp/check-repo-$$-progress.log";
+unlink($tmpFile, $progressFile);
+
 my $repoRoot = "/tmp/check-repo-$$-repoRoot";
+&cmd("rm -rf $repoRoot");
 
 my $result = {};
 
 ### Clone
 
-&cmd("rm -rf $repoRoot");
-my $timeoutInSeconds = 60*60*24; # 1 day in seconds, basically forever.
-if (defined $query->{checkRepo_timeout}) {
-  $timeoutInSeconds = int($query->{checkRepo_timeout});
-}
-my $repoType = &cloneURL($query->{url}, $repoRoot, $timeoutInSeconds);
+my $repoType = &cloneURL($query->{url}, $repoRoot, int($query->{cloneRepo_timeout}));
 
 if (defined $repoType) {
   $result->{couldClone} = 1;
@@ -73,7 +81,7 @@ if (defined $repoType) {
   &writeToFile("file"=>$tmpFile, "contents"=>encode_json($checkTreeQuery));
 
   # Query
-  my $checkTreeResult = decode_json(&chkcmd("$checkTree $tmpFile 2>/dev/null"));
+  my $checkTreeResult = decode_json(&chkcmd("$checkTree $tmpFile 2>>$progressFile"));
   $result->{checkTreeResult} = $checkTreeResult;
 }
 else {
@@ -107,11 +115,12 @@ if ($result->{couldClone}) {
 }
 
 # Cleanup.
-unlink $tmpFile;
+unlink($tmpFile, $progressFile);
 &cmd("rm -rf $repoRoot");
 
-# Emit.
+# Report results.
 print STDOUT encode_json($result) . "\n";
+
 exit 0;
 
 ######################
@@ -156,7 +165,7 @@ sub cloneURL {
 sub cloneAsGit {
   my ($url, $dest, $timeout) = @_;
 
-  my ($rc, $out) = &cmd("timeout ${timeout}s git clone $url $dest 2>/dev/null");
+  my ($rc, $out) = &cmd("timeout ${timeout}s git clone $url $dest 2>>$progressFile");
 
   if ($rc eq 0) {
     return 1;
@@ -168,7 +177,7 @@ sub cloneAsGit {
 sub cloneAsSVN {
   my ($url, $dest, $timeout) = @_;
 
-  my ($rc, $out) = &cmd("timeout ${timeout}s svn checkout $url $dest 2>/dev/null");
+  my ($rc, $out) = &cmd("timeout ${timeout}s svn checkout $url $dest 2>>$progressFile");
 
   if ($rc eq 0) {
     return 1;
@@ -190,6 +199,7 @@ sub writeToFile {
 
 sub cmd {
   my ($cmd) = @_;
+  &log("$cmd");
   my $out = `$cmd`;
   my $rc = $? >> 8;
 
@@ -198,7 +208,6 @@ sub cmd {
 
 sub chkcmd {
   my ($cmd) = @_;
-  &log("$cmd");
   my ($rc, $out) = &cmd($cmd);
   if ($rc) {
     die "Error, cmd <$cmd> gave rc $rc:\n$out\n";
