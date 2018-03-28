@@ -51,8 +51,8 @@ my @detectorNames = map { $_->{name} } @DETECTORS;
 &log("Using detectors <@detectorNames>");
 
 # Define limits on each detector.
-my $ONE_MB_IN_BYTES = 1*1024*1024;
-my $memoryLimitInBytes = (defined $query->{memoryLimit}) ? int($query->{memoryLimit}) * $ONE_MB_IN_BYTES : -1;
+my $ONE_MB_IN_KB = 1*1024; # ulimit -m and -v accept units of KB.
+my $memoryLimitInBytes = (defined $query->{memoryLimit}) ? int($query->{memoryLimit}) * $ONE_MB_IN_KB : -1;
 
 my $limitTime = (defined $query->{timeLimit}) ? "timeout $query->{timeLimit}s" : "";
 my $ulimitMemory = (defined $query->{memoryLimit}) ? "ulimit -m $memoryLimitInBytes; ulimit -v $memoryLimitInBytes;" : "";
