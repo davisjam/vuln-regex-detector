@@ -40,7 +40,7 @@ See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/valid
 ## Pipelining
 
 1. The extraction stage produces a list of regexes. Each regex should be fed to the detection stage.
-2. The detection stage produces evilInput from each detector. Each evilInput should be fed in turn to the validation phsae.
+2. The detection stage produces evil input from each detector. Each evil input should be fed in turn to the validation phase.
 
 The scripts in `bin/` implement this pipeline.
 
