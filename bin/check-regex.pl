@@ -61,6 +61,8 @@ for my $key (keys %defaults) {
 }
 
 my $tmpFile = "/tmp/check-regex-$$.json";
+my $progressFile = "/tmp/check-regex-$$-progress.log";
+unlink($tmpFile, $progressFile);
 
 my $result = { "pattern" => $query->{pattern} };
 
@@ -83,7 +85,7 @@ if (defined $query->{detectVuln_memoryLimit}) {
 # Query $detectVuln.
 &log("Querying detectors");
 &writeToFile("file"=>$tmpFile, "contents"=>encode_json($detectVulnQuery));
-my $detectReport = decode_json(&chkcmd("$detectVuln $tmpFile 2>/dev/null"));
+my $detectReport = decode_json(&chkcmd("$detectVuln $tmpFile 2>>$progressFile"));
 
 $result->{detectReport} = $detectReport;
 
@@ -116,7 +118,7 @@ for my $do (@{$detectReport->{detectorOpinions}}) {
       $validateVulnQuery->{evilInput} = $evilInput;
       &log("Validating evilInput: " . encode_json($evilInput));
       &writeToFile("file"=>$tmpFile, "contents"=>encode_json($validateVulnQuery));
-      my $report = decode_json(&chkcmd("$validateVuln $tmpFile 2>/dev/null"));
+      my $report = decode_json(&chkcmd("$validateVuln $tmpFile 2>>$progressFile"));
       if ($report->{timedOut}) {
         &log("evilInput worked: triggered a timeout");
         $result->{isVulnerable} = 1;
@@ -127,8 +129,12 @@ for my $do (@{$detectReport->{detectorOpinions}}) {
   }
 }
 
-unlink $tmpFile;
+# Cleanup.
+unlink($tmpFile, $progressFile);
+
+# Report results.
 print STDOUT encode_json($result) . "\n";
+
 exit 0;
 
 ######################
@@ -147,6 +153,7 @@ sub writeToFile {
 
 sub cmd {
   my ($cmd) = @_;
+  &log("$cmd");
   my $out = `$cmd`;
   my $rc = $? >> 8;
 
