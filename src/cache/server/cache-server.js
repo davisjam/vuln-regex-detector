@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-// TODO compress
 // TODO privacy policy
-// TODO store proposed results in a separate table, distinct from trusted results
+// TODO log queries
 
 'use strict';
 
@@ -18,23 +17,12 @@ const REQUEST_TYPE_TO_PATH = {};
 REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP] = '/api/lookup';
 REQUEST_TYPE_TO_PATH[REQUEST_UPDATE] = '/api/update';
 
-// key: pattern
-// value: object with keys: language, value PATTERN_X
-let vulns = {};
-
 // Modules.
 const https       = require('https');
 const express     = require('express');
 const bodyParser  = require('body-parser');
 const fs          = require('fs');
 const MongoClient = require('mongodb').MongoClient;
-
-// Connection URL
-const dbUrl = 'mongodb://localhost:27017';
-
-// DB names
-const dbName = 'regexCache'; // DB
-const collectionName = 'cache_2'; // Table
 
 // Config.
 if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
@@ -43,11 +31,19 @@ if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
 const configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
 const config = JSON.parse(fs.readFileSync(configFile));
 
+// DB info -- convenient shorthand.
+const dbUrl = `mongodb://${config.serverConfig.dbConfig.dbServer}:${config.serverConfig.dbConfig.dbPort}`;
+const dbName = config.serverConfig.dbConfig.dbName;
+const dbLookupCollectionName = config.serverConfig.dbConfig.dbLookupCollection;
+const dbUploadCollectionName = config.serverConfig.dbConfig.dbUploadCollection;
+
 // Server keys.
-const privateKeyFile = config.credentials.key.replace("VULN_REGEX_DETECTOR_ROOT", process.env.VULN_REGEX_DETECTOR_ROOT);
+const privateKeyFile = config.serverConfig.serverCredentials.key.replace("VULN_REGEX_DETECTOR_ROOT", process.env.VULN_REGEX_DETECTOR_ROOT);
 const privateKey = fs.readFileSync(privateKeyFile, 'utf8');
-const certificateFile = config.credentials.cert.replace("VULN_REGEX_DETECTOR_ROOT", process.env.VULN_REGEX_DETECTOR_ROOT);
+
+const certificateFile = config.serverConfig.serverCredentials.cert.replace("VULN_REGEX_DETECTOR_ROOT", process.env.VULN_REGEX_DETECTOR_ROOT);
 const certificate = fs.readFileSync(certificateFile, 'utf8');
+
 const credentials = {key: privateKey, cert: certificate};
 
 const app = express();
@@ -69,13 +65,17 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP], jsonParser, function (req, res) {
 app.post(REQUEST_TYPE_TO_PATH[REQUEST_UPDATE], jsonParser, function (req, res) {
 	logQuery(req.body);
 	log('Got POST to /api/update');
-	reportResult(req.body);
-	res.setHeader('Content-Type', 'application/json');
-	res.send(JSON.stringify({ result: 'Thank you!' }));
+	reportResult(req.body)
+		.then((result) => {
+			console.log(result);
+			log(`Update resulted in ${result} from ${JSON.stringify(req.body)}.`);
+			res.setHeader('Content-Type', 'application/json');
+			res.send(JSON.stringify({ result: 'Thank you!' }));
+		});
 })
 
-httpsServer.listen(config.port, function () {
-	log(`Listening on port ${config.port}`);
+httpsServer.listen(config.serverConfig.serverPort, function () {
+	log(`Listening on port ${config.serverConfig.serverPort}`);
 })
 
 /////////////////////
@@ -84,15 +84,27 @@ function createID(pattern, language) {
 	return `/${pattern}/:${language}`;
 }
 
+// Returns a Promise that resolves to one of the PATTERN_X results.
 function isVulnerable(body) {
-	if (!body || !body.pattern || !body.language)
-		return PATTERN_INVALID;
+	// Reject invalid queries
+	if (!body) {
+		return Promise.resolve(PATTERN_INVALID);
+	}
+	let isInvalid = false;
+	['pattern', 'language'].forEach((f) => {
+		if (!body.hasOwnProperty(f)) {
+			isInvalid = true;
+		}
+	});
+	if (isInvalid) {
+		return Promise.resolve(PATTERN_INVALID);
+	}
 
 	return MongoClient.connect(dbUrl)
 		.then((client) => {
 			const db = client.db(dbName);
 			log(`isVulnerable: connected, now querying DB for { ${body.pattern}, ${body.language} }`);
-			return collectionLookup(db.collection(collectionName), {pattern: body.pattern, language: body.language});
+			return collectionLookup(db.collection(dbLookupCollectionName), {pattern: body.pattern, language: body.language});
 		})
 		.catch((e) => {
 			log(`isVulnerable: db error: ${e}`);
@@ -101,11 +113,12 @@ function isVulnerable(body) {
 }
 
 // Helper for isVulnerable.
+// Returns a Promise that resolves to one of the PATTERN_X results.
 function collectionLookup(collection, query) {
 	return collection.find({_id: createID(query.pattern, query.language)}, {result: 1}).toArray()
 		.then((items) => {
 			if (items.length === 0) {
-				log(`collectionLookup ${query.pattern}-${query.language}: no results`);
+				log(`collectionLookup ${createID(query.pattern,query.language)}: no results`);
 				return Promise.resolve(PATTERN_UNKNOWN);
 			}
 			else if (items.length === 1) {
@@ -123,31 +136,61 @@ function collectionLookup(collection, query) {
 		});
 }
 
+// Returns a Promise that resolves to one of the PATTERN_X results.
 function reportResult(body) {
 	// Reject invalid reports.
-	if (!body || !body.pattern || !body.language || !body.result)
-		return;
-	if (body.result !== PATTERN_VULNERABLE && body.result !== PATTERN_SAFE) {
-		return;
+	if (!body) {
+		return Promise.resolve(PATTERN_INVALID);
 	}
 
-	return MongoClient.connect(dbUrl)
-		.then((client) => {
-			const db = client.db(dbName);
-			log(`reportResult: connected, now updating DB for {${body.pattern}, ${body.language}} with ${body.result}`);
-			return collectionUpdate(db.collection(collectionName), {pattern: body.pattern, language: body.language, result: body.result});
-		})
-		.catch((e) => {
-			log(`isVulnerable: db error: ${e}`);
-			return Promise.resolve(PATTERN_UNKNOWN);
-		});
+	// Required fields.
+	let isInvalid = false;
+	['pattern', 'language', 'result'].forEach((f) => {
+		if (!body.hasOwnProperty(f)) {
+			isInvalid = true;
+		}
+	});
+	if (isInvalid) {
+		return Promise.resolve(PATTERN_INVALID);
+	}
 
-	return;
+	// Must be vulnerable or safe.
+	if (body.result !== PATTERN_VULNERABLE && body.result !== PATTERN_SAFE) {
+		return Promise.resolve(PATTERN_INVALID);
+	}
+
+	// Vulnerable must include proof.
+	if (body.result === PATTERN_VULNERABLE && !body.hasOwnProperty('evilInput')) {
+		return Promise.resolve(PATTERN_INVALID);
+	}
+
+	// Malicious client could spam us with already-solved requests.
+	// Check if we know the answer already.
+	return isVulnerable(body)
+		.then((result) => {
+			if (result !== PATTERN_UNKNOWN) {
+				log(`reportResult: already known. Malicious client, or racing clients?`);
+				return Promise.resolve(result);
+			}
+			// New pattern, add to dbUploadCollectionName.
+			log(`reportResult: new result, updating dbUploadCollectionName`);
+			return MongoClient.connect(dbUrl)
+				.then((client) => {
+					const db = client.db(dbName);
+					log(`reportResult: connected, now updating DB for {${body.pattern}, ${body.language}} with ${body.result}`);
+					return collectionUpdate(db.collection(dbUploadCollectionName), {pattern: body.pattern, language: body.language, result: body.result, evilInput: body.evilInput});
+				})
+				.catch((e) => {
+					log(`isVulnerable: db error: ${e}`);
+					return Promise.resolve(PATTERN_UNKNOWN);
+				});
+	});
 }
 
 // Helper for reportResult.
 function collectionUpdate(collection, result) {
-	return collection.insert({_id: createID(result.pattern, result.language), result: result.result})
+	result._id = createID(result.pattern, result.language);
+	return collection.insertOne(result)
 		.catch((e) => {
 			// May fail due to concurrent update on the same value.
 			log(`collectionUpdate: error: ${e}`);

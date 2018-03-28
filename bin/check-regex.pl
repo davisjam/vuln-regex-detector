@@ -35,9 +35,15 @@ if (not -f $queryFile) {
 }
 
 my $query = decode_json(`cat $queryFile`);
-if (defined $query->{regex} and not defined $query->{pattern}) {
-  # Forgive a common mistake.
-  $query->{pattern} = $query->{regex};
+
+# Handle common variations in args.
+my %nick2real = ("regex"    => "pattern",
+                 "language" => "validateVuln_language",
+                );
+for my $nick (keys %nick2real) {
+  if (defined $query->{$nick} and not defined $query->{$nick2real{$nick}}) {
+    $query->{$nick2real{$nick}} = $query->{$nick};
+  }
 }
 
 for my $key ("pattern", "validateVuln_language") {
