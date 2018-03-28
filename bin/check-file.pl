@@ -42,6 +42,8 @@ for my $key ("file") {
 }
 
 my $tmpFile = "/tmp/check-file-$$.json";
+my $progressFile = "/tmp/check-file-$$-progress.log";
+unlink($tmpFile, $progressFile);
 
 my $result = { "file"=>$query->{file} };
 
@@ -67,7 +69,7 @@ my $extractReport;
 &log("Extracting regexes");
 &writeToFile("file"=>$tmpFile, "contents"=>encode_json($extractRegexesQuery));
 {
-  my ($rc, $out) = &cmd("$extractRegexes $tmpFile 2>/dev/null");
+  my ($rc, $out) = &cmd("$extractRegexes $tmpFile 2>>$progressFile");
   if ($rc eq 0) {
     $result->{couldExtractRegexes} = 1;
     $extractReport = decode_json($out);
@@ -108,7 +110,7 @@ if ($result->{couldExtractRegexes}) {
     $checkRegexQuery->{validateVuln_language} = $extractReport->{language};
 
     &writeToFile("file"=>$tmpFile, "contents"=>encode_json($checkRegexQuery));
-    my $checkRegexReport = decode_json(&chkcmd("$checkRegex $tmpFile 2>/dev/null"));
+    my $checkRegexReport = decode_json(&chkcmd("$checkRegex $tmpFile 2>>$progressFile"));
     push @checkRegexReports, $checkRegexReport;
 
     if ($checkRegexReport->{isVulnerable}) {
@@ -132,7 +134,7 @@ if ($result->{couldExtractRegexes}) {
 }
 
 # Cleanup.
-unlink $tmpFile;
+unlink($tmpFile, $progressFile);
 
 # Emit.
 print STDOUT encode_json($result) . "\n";
@@ -154,6 +156,7 @@ sub writeToFile {
 
 sub cmd {
   my ($cmd) = @_;
+  &log("$cmd");
   my $out = `$cmd`;
   my $rc = $? >> 8;
 
