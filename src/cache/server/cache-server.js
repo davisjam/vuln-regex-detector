@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // TODO compress
 // TODO https
-// TODO persistent storage
 
 'use strict';
 
@@ -23,9 +22,17 @@ REQUEST_TYPE_TO_PATH[REQUEST_UPDATE] = '/api/update';
 let vulns = {};
 
 // Modules.
-const express = require('express'),
-      bodyParser = require('body-parser'),
-			fs = require('fs');
+const express     = require('express');
+const bodyParser  = require('body-parser');
+const fs          = require('fs');
+const MongoClient = require('mongodb').MongoClient;
+
+// Connection URL
+const dbUrl = 'mongodb://localhost:27017';
+
+// DB names
+const dbName = 'regexCache'; // DB
+const collectionName = 'cache_1'; // Table
 
 // Config.
 if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
@@ -43,7 +50,10 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP], jsonParser, function (req, res) {
 	logQuery(req.body);
 	log('Got POST to /api/lookup');
 	res.setHeader('Content-Type', 'application/json');
-	res.send(JSON.stringify({ result: isVulnerable(req.body) }));
+	isVulnerable(req.body)
+		.then((result) => {
+			res.send(JSON.stringify({ result: result }));
+		});
 })
 
 app.post(REQUEST_TYPE_TO_PATH[REQUEST_UPDATE], jsonParser, function (req, res) {
@@ -60,16 +70,47 @@ app.listen(config.port, function () {
 
 /////////////////////
 
+function createID(pattern, language) {
+	return `/${pattern}/:${language}`;
+}
+
 function isVulnerable(body) {
 	if (!body || !body.pattern || !body.language)
 		return PATTERN_INVALID;
 
-	if (vulns[body.pattern] && vulns[body.pattern][body.language]) {
-		return vulns[body.pattern][body.language];
-	}
-	else {
-		return PATTERN_UNKNOWN;
-	}
+	return MongoClient.connect(dbUrl)
+		.then((client) => {
+			const db = client.db(dbName);
+			log(`isVulnerable: connected, now querying DB for { ${body.pattern}, ${body.language} }`);
+			return collectionLookup(db.collection(collectionName), {pattern: body.pattern, language: body.language});
+		})
+		.catch((e) => {
+			log(`isVulnerable: db error: ${e}`);
+			return Promise.resolve(PATTERN_UNKNOWN);
+		});
+}
+
+// Helper for isVulnerable.
+function collectionLookup(collection, query) {
+	return collection.find({_id: createID(query.pattern, query.language)}, {result: 1}).toArray()
+		.then((items) => {
+			if (items.length === 0) {
+				log(`collectionLookup ${query.pattern}-${query.language}: no results`);
+				return Promise.resolve(PATTERN_UNKNOWN);
+			}
+			else if (items.length === 1) {
+				log(`collectionLookup ${query.pattern}-${query.language}: result: ${items[0].result}`);
+				return Promise.resolve(items[0].result);
+			}
+			else {
+				log(`collectionLookup unexpected multiple match: ${JSON.stringify(items)}`);
+				return Promise.resolve(PATTERN_UNKNOWN);
+			}
+		})
+		.catch((e) => {
+			log(`collectionLookup error: ${e}`);
+			return Promise.resolve(PATTERN_UNKNOWN);
+		});
 }
 
 function reportResult(body) {
@@ -80,21 +121,28 @@ function reportResult(body) {
 		return;
 	}
 
-	// New pattern?
-	if (!vulns[body.pattern]) {
-		vulns[body.pattern] = {};
-	}
-
-	// New {pattern, language} pair?
-	if (vulns[body.pattern][body.language]) {
-		return;
-	}
-	else {
-		log(`New result: { /${body.pattern}/, ${body.language} is ${body.result}`)
-		vulns[body.pattern][body.language] = body.result;
-	}
+	return MongoClient.connect(dbUrl)
+		.then((client) => {
+			const db = client.db(dbName);
+			log(`reportResult: connected, now updating DB for {${body.pattern}, ${body.language}} with ${body.result}`);
+			return collectionUpdate(db.collection(collectionName), {pattern: body.pattern, language: body.language, result: body.result});
+		})
+		.catch((e) => {
+			log(`isVulnerable: db error: ${e}`);
+			return Promise.resolve(PATTERN_UNKNOWN);
+		});
 
 	return;
+}
+
+// Helper for reportResult.
+function collectionUpdate(collection, result) {
+	return collection.insert({_id: createID(result.pattern, result.language), result: result.result})
+		.catch((e) => {
+			// May fail due to concurrent update on the same value.
+			log(`collectionUpdate: error: ${e}`);
+			return Promise.resolve(PATTERN_INVALID);
+		});
 }
 
 function logQuery(req) {
