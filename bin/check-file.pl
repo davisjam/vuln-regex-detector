@@ -50,14 +50,14 @@ my $result = { "file"=>$query->{file} };
 # Prep a query to $extractRegexes.
 my $extractRegexesQuery = {};
 
-if ($query->{file}) {
+if (defined $query->{file}) {
   $extractRegexesQuery->{file} = $query->{file};
 }
 else {
   die "Error, no 'file' specified in input\n";
 }
 
-if ($query->{extractRegexes_language}) {
+if (defined $query->{extractRegexes_language}) {
   $extractRegexesQuery->{language} = $query->{extractRegexes_language};
 }
 

@@ -45,10 +45,10 @@ my $result = {};
 # Prep a query to $detectVuln.
 my $detectVulnQuery = {};
 
-if ($pattern->{regex}) {
+if (defined $pattern->{regex}) {
   $detectVulnQuery->{pattern} = $pattern->{regex};
 }
-elsif ($pattern->{pattern}) {
+elsif (defined $pattern->{pattern}) {
   $detectVulnQuery->{pattern} = $pattern->{pattern};
 }
 else {
@@ -57,13 +57,13 @@ else {
 
 $result->{pattern} = $detectVulnQuery->{pattern};
 
-if ($pattern->{detectVuln_detectors}) {
+if (defined $pattern->{detectVuln_detectors}) {
   $detectVulnQuery->{detectors} = $pattern->{detectVuln_detectors};
 }
-if ($pattern->{detectVuln_timeLimit}) {
+if (defined $pattern->{detectVuln_timeLimit}) {
   $detectVulnQuery->{timeLimit} = $pattern->{detectVuln_timeLimit};
 }
-if ($pattern->{detectVuln_memoryLimit}) {
+if (defined $pattern->{detectVuln_memoryLimit}) {
   $detectVulnQuery->{memoryLimit} = $pattern->{detectVuln_memoryLimit};
 }
 
@@ -79,17 +79,17 @@ $result->{detectReport} = $detectReport;
 # Prep a query to $validateVuln.
 my $validateVulnQuery = {};
 
-if ($pattern->{regex}) {
+if (defined $pattern->{regex}) {
   $validateVulnQuery->{pattern} = $pattern->{regex};
 }
-elsif ($pattern->{pattern}) {
+elsif (defined $pattern->{pattern}) {
   $validateVulnQuery->{pattern} = $pattern->{pattern};
 }
 else {
   die "Error, neither 'regex' nor 'pattern' specified in input\n";
 }
 
-if ($pattern->{validateVuln_language}) {
+if (defined $pattern->{validateVuln_language}) {
   $validateVulnQuery->{language} = $pattern->{validateVuln_language};
 }
 else {
@@ -98,14 +98,14 @@ else {
 
 # $validateVuln requires nPumps and timeLimit.
 # Choose sensible defaults.
-if ($pattern->{validateVuln_nPumps}) {
+if (defined $pattern->{validateVuln_nPumps}) {
   $validateVulnQuery->{nPumps} = $pattern->{validateVuln_nPumps};
 }
 else {
   $validateVulnQuery->{nPumps} = 250000;
 }
 
-if ($pattern->{validateVuln_timeLimit}) {
+if (defined $pattern->{validateVuln_timeLimit}) {
   $validateVulnQuery->{timeLimit} = $pattern->{validateVuln_timeLimit};
 }
 else {
