@@ -40,6 +40,15 @@ for my $key ("url") {
   }
 }
 
+my %defaults = ("cloneRepo_timeout" => 60*60*24, # 1 day in seconds, basically forever
+               );
+for my $key (keys %defaults) {
+  if (not defined $query->{$key}) {
+    &log("Using default for $key: $defaults{$key}");
+    $query->{$key} = $defaults{$key};
+  }
+}
+
 my $tmpFile = "/tmp/check-repo-$$.json";
 my $repoRoot = "/tmp/check-repo-$$-repoRoot";
 
@@ -47,12 +56,7 @@ my $result = {};
 
 ### Clone
 
-&cmd("rm -rf $repoRoot");
-my $timeoutInSeconds = 60*60*24; # 1 day in seconds, basically forever.
-if (defined $query->{checkRepo_timeout}) {
-  $timeoutInSeconds = int($query->{checkRepo_timeout});
-}
-my $repoType = &cloneURL($query->{url}, $repoRoot, $timeoutInSeconds);
+my $repoType = &cloneURL($query->{url}, $repoRoot, int($query->{cloneRepo_timeout}));
 
 if (defined $repoType) {
   $result->{couldClone} = 1;

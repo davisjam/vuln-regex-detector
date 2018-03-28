@@ -29,42 +29,55 @@ if (scalar(@ARGV) != 1) {
   die "Usage: $0 regex-pattern.json\n";
 }
 
-my $patternFile = $ARGV[0];
-if (not -f $patternFile) {
-  die "Error, no such patternFile $patternFile\n";
+my $queryFile = $ARGV[0];
+if (not -f $queryFile) {
+  die "Error, no such patternFile $queryFile\n";
 }
 
-my $pattern = decode_json(`cat $patternFile`);
+my $query = decode_json(`cat $queryFile`);
+if (defined $query->{regex} and not defined $query->{pattern}) {
+  # Forgive a common mistake.
+  $query->{pattern} = $query->{regex};
+}
+
+for my $key ("pattern", "validateVuln_language") {
+  if (not defined $query->{$key}) {
+    die "Error, must provide key $key\n";
+  }
+}
+
+my %defaults = ("detectVuln_timeLimit"   => 60*1,   # 1 minute in seconds
+                "detectVuln_memoryLimit" => 1024*8, # 8GB in MB. Weideman/java is greedy.
+                # $validateVuln requires nPumps and timeLimit.
+                # Choose sensible defaults.
+                "validateVuln_nPumps"    => 250000, # 250K pumps
+                "validateVuln_timeLimit" => 5,      # 5 seconds
+               );
+for my $key (keys %defaults) {
+  if (not defined $query->{$key}) {
+    &log("Using default for $key: $defaults{$key}");
+    $query->{$key} = $defaults{$key};
+  }
+}
 
 my $tmpFile = "/tmp/check-regex-$$.json";
 
-my $result = {};
+my $result = { "pattern" => $query->{pattern} };
 
 ### Query detectors.
 
 # Prep a query to $detectVuln.
-my $detectVulnQuery = {};
+my $detectVulnQuery = { "pattern" => $query->{pattern} };
 
-if (defined $pattern->{regex}) {
-  $detectVulnQuery->{pattern} = $pattern->{regex};
+# Let $detectVuln set these defaults itself.
+if (defined $query->{detectVuln_detectors}) {
+  $detectVulnQuery->{detectors} = $query->{detectVuln_detectors};
 }
-elsif (defined $pattern->{pattern}) {
-  $detectVulnQuery->{pattern} = $pattern->{pattern};
+if (defined $query->{detectVuln_timeLimit}) {
+  $detectVulnQuery->{timeLimit} = $query->{detectVuln_timeLimit};
 }
-else {
-  die "Error, neither 'regex' nor 'pattern' specified in input\n";
-}
-
-$result->{pattern} = $detectVulnQuery->{pattern};
-
-if (defined $pattern->{detectVuln_detectors}) {
-  $detectVulnQuery->{detectors} = $pattern->{detectVuln_detectors};
-}
-if (defined $pattern->{detectVuln_timeLimit}) {
-  $detectVulnQuery->{timeLimit} = $pattern->{detectVuln_timeLimit};
-}
-if (defined $pattern->{detectVuln_memoryLimit}) {
-  $detectVulnQuery->{memoryLimit} = $pattern->{detectVuln_memoryLimit};
+if (defined $query->{detectVuln_memoryLimit}) {
+  $detectVulnQuery->{memoryLimit} = $query->{detectVuln_memoryLimit};
 }
 
 # Query $detectVuln.
@@ -77,40 +90,11 @@ $result->{detectReport} = $detectReport;
 ### Validate any reported vulnerabilities.
 
 # Prep a query to $validateVuln.
-my $validateVulnQuery = {};
-
-if (defined $pattern->{regex}) {
-  $validateVulnQuery->{pattern} = $pattern->{regex};
-}
-elsif (defined $pattern->{pattern}) {
-  $validateVulnQuery->{pattern} = $pattern->{pattern};
-}
-else {
-  die "Error, neither 'regex' nor 'pattern' specified in input\n";
-}
-
-if (defined $pattern->{validateVuln_language}) {
-  $validateVulnQuery->{language} = $pattern->{validateVuln_language};
-}
-else {
-  die "Error, input did not specify validateVuln_language\n";
-}
-
-# $validateVuln requires nPumps and timeLimit.
-# Choose sensible defaults.
-if (defined $pattern->{validateVuln_nPumps}) {
-  $validateVulnQuery->{nPumps} = $pattern->{validateVuln_nPumps};
-}
-else {
-  $validateVulnQuery->{nPumps} = 250000;
-}
-
-if (defined $pattern->{validateVuln_timeLimit}) {
-  $validateVulnQuery->{timeLimit} = $pattern->{validateVuln_timeLimit};
-}
-else {
-  $validateVulnQuery->{timeLimit} = 5;
-}
+my $validateVulnQuery = { "pattern"   => $query->{pattern},
+                          "language"  => $query->{validateVuln_language},
+                          "nPumps"    => $query->{validateVuln_nPumps},
+                          "timeLimit" => $query->{validateVuln_timeLimit},
+                        };
 
 # See what each detector thought.
 # Bail if any finds a vulnerability.
