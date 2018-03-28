@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// TODO compress
 // TODO privacy policy
 
 'use strict';
@@ -28,7 +27,7 @@ if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
 const configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
 const config = JSON.parse(fs.readFileSync(configFile));
 
-if (!config.useCache) {
+if (!config.clientConfig.useCache) {
 	die('Config says do not use cache');
 }
 
@@ -43,16 +42,20 @@ const query = JSON.parse(fs.readFileSync(queryFile));
 
 const requiredFields = ['pattern', 'language', 'requestType'];
 requiredFields.forEach((f) => {
-	if (!query[f]) {
+	if (!query.hasOwnProperty(f)) {
 		die(`Invalid queryFile ${queryFile}: Missing requiredField ${f}`);
 	}
 });
 
 if (query.requestType === REQUEST_UPDATE) {
-	const requiredFields = ['result'];
+	let requiredFields = ['result'];
+	if (query.result === PATTERN_VULNERABLE) {
+		requiredFields.push('evilInput');
+	}
+
 	requiredFields.forEach((f) => {
-		if (!query[f]) {
-			die(`Invalid queryFile ${queryFile} with requestType ${query.requestType}: Missing requiredField ${f}`);
+		if (!query.hasOwnProperty(f)) {
+			die(`Invalid queryFile ${queryFile}: Missing requiredField ${f}`);
 		}
 	});
 }
@@ -60,8 +63,8 @@ if (query.requestType === REQUEST_UPDATE) {
 // Prep request.
 const postData = JSON.stringify(query);
 const postOptions = {
-  hostname: config.server,
-  port: config.port,
+  hostname: config.clientConfig.cacheServer,
+  port: config.clientConfig.cachePort,
   path: REQUEST_TYPE_TO_PATH[query.requestType],
   method: 'POST',
   headers: {
