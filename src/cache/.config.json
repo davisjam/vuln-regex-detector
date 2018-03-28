@@ -1,0 +1,6 @@
+{
+	"useCache": 1,
+  "server": "woody.cs.vt.edu",
+	"port": 8000,
+	"canDiscloseAnonymizedQueries": 1
+}
