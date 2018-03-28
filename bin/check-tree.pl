@@ -41,6 +41,8 @@ for my $key ("root") {
 }
 
 my $tmpFile = "/tmp/check-tree-$$.json";
+my $progressFile = "/tmp/check-tree-$$-progress.log";
+unlink($tmpFile, $progressFile);
 
 my $result = {};
 
@@ -76,7 +78,7 @@ for my $file (@filesToCheck) {
   &writeToFile("file"=>$tmpFile, "contents"=>encode_json($checkFileQuery));
 
   # Might fail if it's not a supported file type.
-  my $checkFileReport = decode_json(&chkcmd("$checkFile $tmpFile 2>/dev/null"));
+  my $checkFileReport = decode_json(&chkcmd("$checkFile $tmpFile 2>>$progressFile"));
   push @checkFileReports, $checkFileReport;
 
   next if (not $checkFileReport->{couldExtractRegexes});
@@ -101,9 +103,9 @@ else {
 &log("Root $query->{root} contained " . scalar(@vulnFiles) . " vulnerable file(s)");
 
 # Cleanup.
-unlink $tmpFile;
+unlink($tmpFile, $progressFile);
 
-# Emit.
+# Report results.
 print STDOUT encode_json($result) . "\n";
 exit 0;
 
@@ -123,6 +125,7 @@ sub writeToFile {
 
 sub cmd {
   my ($cmd) = @_;
+  &log("$cmd");
   my $out = `$cmd`;
   my $rc = $? >> 8;
 
@@ -131,7 +134,6 @@ sub cmd {
 
 sub chkcmd {
   my ($cmd) = @_;
-  &log("$cmd");
   my ($rc, $out) = &cmd($cmd);
   if ($rc) {
     die "Error, cmd <$cmd> gave rc $rc:\n$out\n";
