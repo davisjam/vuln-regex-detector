@@ -2,5 +2,9 @@
 	"useCache": 1,
   "server": "woody.cs.vt.edu",
 	"port": 8000,
+	"credentials": {
+		"key": "VULN_REGEX_DETECTOR_ROOT/src/cache/server/keys/key.pem",
+		"cert": "VULN_REGEX_DETECTOR_ROOT/src/cache/server/keys/cert.pem"
+	},
 	"canDiscloseAnonymizedQueries": 1
 }
