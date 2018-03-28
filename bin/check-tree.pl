@@ -52,7 +52,7 @@ chomp @filesToCheck;
 &log("Found " . scalar(@filesToCheck) . " files");
 
 # Did they want to exclude directories?
-if ($query->{excludeDirs}) {
+if (defined $query->{excludeDirs}) {
   for my $excludeDir (@{$query->{excludeDirs}}) {
     @filesToCheck = grep { not m/(^|\/)$excludeDir\// } @filesToCheck;
   }
