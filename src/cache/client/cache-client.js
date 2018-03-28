@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // TODO compress
-// TODO https
+// TODO privacy policy
 
 'use strict';
 
@@ -18,8 +18,8 @@ REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP] = '/api/lookup';
 REQUEST_TYPE_TO_PATH[REQUEST_UPDATE] = '/api/update';
 
 // Modules.
-const fs = require('fs');
-const http = require('http');
+const fs    = require('fs');
+const https = require('https');
 
 // Config.
 if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
@@ -73,7 +73,8 @@ const postOptions = {
 log(`postOptions:\n${JSON.stringify(postOptions)}`);
 log(`${query.requestType} ${JSON.stringify(REQUEST_TYPE_TO_PATH)}`);
 
-const req = http.request(postOptions, (res) => {
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // self-signed, baby
+const req = https.request(postOptions, (res) => {
 	log(`STATUS: ${res.statusCode}`);
 	log(`HEADERS: ${JSON.stringify(res.headers)}`);
 	res.setEncoding('utf8');

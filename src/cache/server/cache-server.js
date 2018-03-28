@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // TODO compress
-// TODO https
+// TODO privacy policy
+// TODO store proposed results in a separate table, distinct from trusted results
 
 'use strict';
 
@@ -22,6 +23,7 @@ REQUEST_TYPE_TO_PATH[REQUEST_UPDATE] = '/api/update';
 let vulns = {};
 
 // Modules.
+const https       = require('https');
 const express     = require('express');
 const bodyParser  = require('body-parser');
 const fs          = require('fs');
@@ -32,7 +34,7 @@ const dbUrl = 'mongodb://localhost:27017';
 
 // DB names
 const dbName = 'regexCache'; // DB
-const collectionName = 'cache_1'; // Table
+const collectionName = 'cache_2'; // Table
 
 // Config.
 if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
@@ -41,7 +43,15 @@ if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
 const configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
 const config = JSON.parse(fs.readFileSync(configFile));
 
-let app = express();
+// Server keys.
+const privateKeyFile = config.credentials.key.replace("VULN_REGEX_DETECTOR_ROOT", process.env.VULN_REGEX_DETECTOR_ROOT);
+const privateKey = fs.readFileSync(privateKeyFile, 'utf8');
+const certificateFile = config.credentials.cert.replace("VULN_REGEX_DETECTOR_ROOT", process.env.VULN_REGEX_DETECTOR_ROOT);
+const certificate = fs.readFileSync(certificateFile, 'utf8');
+const credentials = {key: privateKey, cert: certificate};
+
+const app = express();
+const httpsServer = https.createServer(credentials, app);
 
 // create application/json parser
 let jsonParser = bodyParser.json()
@@ -64,7 +74,7 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_UPDATE], jsonParser, function (req, res) {
 	res.send(JSON.stringify({ result: 'Thank you!' }));
 })
 
-app.listen(config.port, function () {
+httpsServer.listen(config.port, function () {
 	log(`Listening on port ${config.port}`);
 })
 
