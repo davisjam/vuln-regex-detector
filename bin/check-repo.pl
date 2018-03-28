@@ -49,12 +49,12 @@ my $result = {};
 
 &cmd("rm -rf $repoRoot");
 my $timeoutInSeconds = 60*60*24; # 1 day in seconds, basically forever.
-if ($query->{checkRepo_timeout}) {
+if (defined $query->{checkRepo_timeout}) {
   $timeoutInSeconds = int($query->{checkRepo_timeout});
 }
 my $repoType = &cloneURL($query->{url}, $repoRoot, $timeoutInSeconds);
 
-if ($repoType) {
+if (defined $repoType) {
   $result->{couldClone} = 1;
   $result->{repoType} = $repoType;
 
@@ -125,7 +125,7 @@ sub cloneURL {
                     );
 
   my @typesToTry;
-  if ($query->{checkRepo_type}) {
+  if (defined $query->{checkRepo_type}) {
     if (defined $type2cloner{$query->{checkRepo_type}}) {
       @typesToTry = ($query->{checkRepo_type});
     }
