@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // TODO compress
 // TODO https
+// TODO persistent storage
 
 'use strict';
 
 // Globals.
 const PATTERN_VULNERABLE = 'VULNERABLE';
 const PATTERN_SAFE       = 'SAFE';
+const PATTERN_UNKNOWN    = 'UNKNOWN';
 const PATTERN_INVALID    = 'INVALID';
 
 const REQUEST_LOOKUP = "LOOKUP";
@@ -15,6 +17,10 @@ const REQUEST_UPDATE = "UPDATE";
 const REQUEST_TYPE_TO_PATH = {}; 
 REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP] = '/api/lookup';
 REQUEST_TYPE_TO_PATH[REQUEST_UPDATE] = '/api/update';
+
+// key: pattern
+// value: object with keys: language, value PATTERN_X
+let vulns = {};
 
 // Modules.
 const express = require('express'),
@@ -54,15 +60,40 @@ app.listen(config.port, function () {
 
 /////////////////////
 
-function isVulnerable(query) {
-	if (!query || !query.pattern || !query.language)
+function isVulnerable(body) {
+	if (!body || !body.pattern || !body.language)
 		return PATTERN_INVALID;
 
-	// TODO Query storage.
-	return PATTERN_SAFE;
+	if (vulns[body.pattern] && vulns[body.pattern][body.language]) {
+		return vulns[body.pattern][body.language];
+	}
+	else {
+		return PATTERN_UNKNOWN;
+	}
 }
 
-function reportResult(result) {
+function reportResult(body) {
+	// Reject invalid reports.
+	if (!body || !body.pattern || !body.language || !body.result)
+		return;
+	if (body.result !== PATTERN_VULNERABLE && body.result !== PATTERN_SAFE) {
+		return;
+	}
+
+	// New pattern?
+	if (!vulns[body.pattern]) {
+		vulns[body.pattern] = {};
+	}
+
+	// New {pattern, language} pair?
+	if (vulns[body.pattern][body.language]) {
+		return;
+	}
+	else {
+		log(`New result: { /${body.pattern}/, ${body.language} is ${body.result}`)
+		vulns[body.pattern][body.language] = body.result;
+	}
+
 	return;
 }
 

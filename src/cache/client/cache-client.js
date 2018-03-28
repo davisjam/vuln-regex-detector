@@ -7,6 +7,7 @@
 // Globals.
 const PATTERN_VULNERABLE = 'VULNERABLE';
 const PATTERN_SAFE       = 'SAFE';
+const PATTERN_UNKNOWN    = 'UNKNOWN';
 const PATTERN_INVALID    = 'INVALID';
 
 const REQUEST_LOOKUP = "LOOKUP";
