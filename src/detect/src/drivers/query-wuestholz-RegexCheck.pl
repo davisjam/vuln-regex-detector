@@ -47,7 +47,8 @@ unlink $tmpFile;
 print STDERR "CLEANUP: $tmpFile\n"; # If we time out, the parent can clean up for us.
 
 # Run.
-my $cmdString = "java -Xss64M -Xmx1024M -jar $regexCheckDir/regexcheck.jar -f $tmpFile -e false -v 1";
+my $jvmNoDumpFlags = ""; # TODO Is there a portable way to do this? "-XXnoJrDump -XXdumpSize:none"; # Disable crash files (generated if ulimit on memory exceeded).
+my $cmdString = "java $jvmNoDumpFlags -Xss64M -Xmx1024M -jar $regexCheckDir/regexcheck.jar -f $tmpFile -e false -v 1";
 my ($rc, $out) = &cmd("$cmdString 2>&1");
 unlink $tmpFile;
 
