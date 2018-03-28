@@ -1,0 +1,16 @@
+{
+  "name": "vrd-cache-client",
+  "version": "1.0.0",
+  "description": "Client side of the VRD cache",
+  "main": "cache-client.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src/js"
+  },
+  "author": "Jamie Davis",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^4.19.1"
+  }
+}

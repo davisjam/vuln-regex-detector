@@ -1,0 +1,19 @@
+{
+  "name": "vrd-cache-server",
+  "version": "1.0.0",
+  "description": "Server side of the VRD cache",
+  "main": "cache-server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src/js"
+  },
+  "author": "Jamie Davis",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.16.3"
+  },
+  "devDependencies": {
+    "eslint": "^4.19.1"
+  }
+}
