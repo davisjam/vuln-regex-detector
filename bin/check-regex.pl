@@ -10,9 +10,33 @@ use warnings;
 
 use JSON::PP;
 
+# Globals.
+my $PATTERN_SAFE       = "SAFE";
+my $PATTERN_VULNERABLE = "VULNERABLE";
+my $PATTERN_UNKNOWN    = "UNKNOWN";
+my $PATTERN_INVALID    = "INVALID";
+
+my $REQUEST_LOOKUP = "LOOKUP";
+my $REQUEST_UPDATE = "UPDATE";
+
+my $tmpFile = "/tmp/check-regex-$$.json";
+my $progressFile = "/tmp/check-regex-$$-progress.log";
+unlink($tmpFile, $progressFile);
+
 # Check dependencies.
 if (not defined $ENV{VULN_REGEX_DETECTOR_ROOT}) {
   die "Error, VULN_REGEX_DETECTOR_ROOT must be defined\n";
+}
+
+# Use cache?
+my $useCache = 0;
+my $cacheConfigFile = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json";
+my $cacheConfig;
+if (-f $cacheConfigFile) {
+  $cacheConfig = decode_json(&readFile("file"=>$cacheConfigFile));
+  if ($cacheConfig->{clientConfig}->{useCache}) {
+    $useCache = 1;
+  }
 }
 
 my $detectVuln = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/detect-vuln.pl";
@@ -52,86 +76,105 @@ for my $key ("pattern", "validateVuln_language") {
   }
 }
 
-my %defaults = ("detectVuln_timeLimit"   => 60*1,   # 1 minute in seconds
-                "detectVuln_memoryLimit" => 1024*8, # 8GB in MB. Weideman/java is greedy.
-                # $validateVuln requires nPumps and timeLimit.
-                # Choose sensible defaults.
-                "validateVuln_nPumps"    => 250000, # 250K pumps
-                "validateVuln_timeLimit" => 5,      # 5 seconds
-               );
-for my $key (keys %defaults) {
-  if (not defined $query->{$key}) {
-    &log("Using default for $key: $defaults{$key}");
-    $query->{$key} = $defaults{$key};
+# Query cache?
+my $cacheResponse;
+my $cacheHit = 0;
+if ($useCache) {
+  &log("Querying the cache");
+  $cacheResponse = &queryCache($query);
+  &log("Cache says $cacheResponse->{result}");
+  if ($cacheResponse->{result} eq $PATTERN_SAFE or $cacheResponse->{result} eq $PATTERN_VULNERABLE) {
+    $cacheHit = 1;
   }
 }
 
-my $tmpFile = "/tmp/check-regex-$$.json";
-my $progressFile = "/tmp/check-regex-$$-progress.log";
-unlink($tmpFile, $progressFile);
-
-my $result = { "pattern" => $query->{pattern} };
-
-### Query detectors.
-
-# Prep a query to $detectVuln.
-my $detectVulnQuery = { "pattern" => $query->{pattern} };
-
-# Let $detectVuln set these defaults itself.
-if (defined $query->{detectVuln_detectors}) {
-  $detectVulnQuery->{detectors} = $query->{detectVuln_detectors};
+my $result;
+if ($cacheHit) {
+  $result = &translateCacheResponse($cacheResponse);
 }
-if (defined $query->{detectVuln_timeLimit}) {
-  $detectVulnQuery->{timeLimit} = $query->{detectVuln_timeLimit};
-}
-if (defined $query->{detectVuln_memoryLimit}) {
-  $detectVulnQuery->{memoryLimit} = $query->{detectVuln_memoryLimit};
-}
+else {
+  $result = { "pattern" => $query->{pattern} };
 
-# Query $detectVuln.
-&log("Querying detectors");
-&writeToFile("file"=>$tmpFile, "contents"=>encode_json($detectVulnQuery));
-my $detectReport = decode_json(&chkcmd("$detectVuln $tmpFile 2>>$progressFile"));
+  my %defaults = ("detectVuln_timeLimit"   => 60*1,   # 1 minute in seconds
+                  "detectVuln_memoryLimit" => 1024*8, # 8GB in MB. Weideman/java is greedy.
+                  # $validateVuln requires nPumps and timeLimit.
+                  # Choose sensible defaults.
+                  "validateVuln_nPumps"    => 250000, # 250K pumps
+                  "validateVuln_timeLimit" => 5,      # 5 seconds
+                 );
+  for my $key (keys %defaults) {
+    if (not defined $query->{$key}) {
+      &log("Using default for $key: $defaults{$key}");
+      $query->{$key} = $defaults{$key};
+    }
+  }
 
-$result->{detectReport} = $detectReport;
+  ### Query detectors.
 
-### Validate any reported vulnerabilities.
+  # Prep a query to $detectVuln.
+  my $detectVulnQuery = { "pattern" => $query->{pattern} };
 
-# Prep a query to $validateVuln.
-my $validateVulnQuery = { "pattern"   => $query->{pattern},
-                          "language"  => $query->{validateVuln_language},
-                          "nPumps"    => $query->{validateVuln_nPumps},
-                          "timeLimit" => $query->{validateVuln_timeLimit},
-                        };
+  # Let $detectVuln set these defaults itself.
+  if (defined $query->{detectVuln_detectors}) {
+    $detectVulnQuery->{detectors} = $query->{detectVuln_detectors};
+  }
+  if (defined $query->{detectVuln_timeLimit}) {
+    $detectVulnQuery->{timeLimit} = $query->{detectVuln_timeLimit};
+  }
+  if (defined $query->{detectVuln_memoryLimit}) {
+    $detectVulnQuery->{memoryLimit} = $query->{detectVuln_memoryLimit};
+  }
 
-# See what each detector thought.
-# Bail if any finds a vulnerability.
-$result->{isVulnerable} = 0;
-for my $do (@{$detectReport->{detectorOpinions}}) {
-  # Are we done?
-  last if ($result->{isVulnerable});
+  # Query $detectVuln.
+  &log("Querying detectors");
+  &writeToFile("file"=>$tmpFile, "contents"=>encode_json($detectVulnQuery));
+  my $detectReport = decode_json(&chkcmd("$detectVuln $tmpFile 2>>$progressFile"));
 
-  # Check this detector's opinion.
-  &log("Checking $do->{name} for timeout-triggering evil input");
+  $result->{detectReport} = $detectReport;
 
-  # Maybe vulnerable?
-  if ($do->{hasOpinion} and $do->{opinion}->{canAnalyze} and not $do->{opinion}->{isSafe}) {
-    # If unparseable, evilInput is an empty array or has elt 0 'COULD-NOT-PARSE'
-    for my $evilInput (@{$do->{opinion}->{evilInput}}) {
-      next if $evilInput eq "COULD-NOT-PARSE";
+  ### Validate any reported vulnerabilities.
+ 
+  # Prep a query to $validateVuln.
+  my $validateVulnQuery = { "pattern"   => $query->{pattern},
+                            "language"  => $query->{validateVuln_language},
+                            "nPumps"    => $query->{validateVuln_nPumps},
+                            "timeLimit" => $query->{validateVuln_timeLimit},
+                          };
 
-      # Does this evilInput trigger catastrophic backtracking?
-      $validateVulnQuery->{evilInput} = $evilInput;
-      &log("Validating evilInput: " . encode_json($evilInput));
-      &writeToFile("file"=>$tmpFile, "contents"=>encode_json($validateVulnQuery));
-      my $report = decode_json(&chkcmd("$validateVuln $tmpFile 2>>$progressFile"));
-      if ($report->{timedOut}) {
-        &log("evilInput worked: triggered a timeout");
-        $result->{isVulnerable} = 1;
-        $result->{validateReport} = $report;
-        last;
+  # See what each detector thought.
+  # Bail if any finds a vulnerability.
+  $result->{isVulnerable} = 0;
+  for my $do (@{$detectReport->{detectorOpinions}}) {
+    # Are we done?
+    last if ($result->{isVulnerable});
+
+    # Check this detector's opinion.
+    &log("Checking $do->{name} for timeout-triggering evil input");
+
+    # Maybe vulnerable?
+    if ($do->{hasOpinion} and $do->{opinion}->{canAnalyze} and not $do->{opinion}->{isSafe}) {
+      # If unparseable, evilInput is an empty array or has elt 0 'COULD-NOT-PARSE'
+      for my $evilInput (@{$do->{opinion}->{evilInput}}) {
+        next if $evilInput eq "COULD-NOT-PARSE";
+
+        # Does this evilInput trigger catastrophic backtracking?
+        $validateVulnQuery->{evilInput} = $evilInput;
+        &log("Validating evilInput: " . encode_json($evilInput));
+        &writeToFile("file"=>$tmpFile, "contents"=>encode_json($validateVulnQuery));
+        my $report = decode_json(&chkcmd("$validateVuln $tmpFile 2>>$progressFile"));
+        if ($report->{timedOut}) {
+          &log("evilInput worked: triggered a timeout");
+          $result->{isVulnerable} = 1;
+          $result->{validateReport} = $report;
+          last;
+        }
       }
     }
+  }
+
+  if ($useCache) {
+    &log("Updating the cache");
+    &updateCache($result);
   }
 }
 
@@ -144,6 +187,136 @@ print STDOUT encode_json($result) . "\n";
 exit 0;
 
 ######################
+
+# input: ($query) keys: pattern language
+# output: ($cacheResponse) keys: pattern language result [evilInput]
+sub queryCache {
+  my ($query) = @_;
+
+  my $unknownResponse = {
+    "pattern"  => $query->{pattern},
+    "language" => $query->{language},
+    "result"   => $PATTERN_UNKNOWN,
+  };
+
+  my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cache-client.js";
+  if (not -f $cacheClient) {
+    &log("queryCache: Could not find client $cacheClient");
+    return $unknownResponse;
+  }
+
+  my $tmpFile = "/tmp/detect-vuln_queryCache-$$.json";
+  my $cacheQuery = {
+    "pattern"                      => $query->{pattern},
+    "language"                     => $query->{language},
+    "requestType"                  => $REQUEST_LOOKUP,
+    "canDiscloseAnonymizedQueries" => $cacheConfig->{clientConfig}->{canDiscloseAnonymizedQueries},
+  };
+  &writeToFile("file"=>$tmpFile, "contents"=>encode_json($cacheQuery));
+  my ($rc, $out) = &cmd("$cacheClient $tmpFile 2>>$progressFile");
+  unlink $tmpFile;
+
+  &log("cacheClient: rc $rc out\n$out");
+
+  if ($rc eq 0) {
+    my $ret = decode_json($out);
+
+    if (not ref($ret->{result})) {
+      &log("ret doesn't have a long result");
+      return $unknownResponse;
+    }
+    if ($ret->{result}->{result} ne $PATTERN_VULNERABLE and $ret->{result}->{result} ne $PATTERN_SAFE) {
+      &log("ret has unexpected result $ret->{result}->{result}");
+      return $unknownResponse;
+    }
+
+    my $cacheResponse = {
+      "pattern"  => $query->{pattern},
+      "language" => $query->{language},
+      "result"   => $ret->{result}->{result},
+      "_full"    => $ret,
+    };
+    if ($ret->{result}->{result} eq $PATTERN_VULNERABLE) {
+      $cacheResponse->{evilInput} = $ret->{result}->{result};
+    }
+
+    return $cacheResponse;
+  }
+
+  return $unknownResponse;
+}
+
+# input: ($checkRegexResponse) from a local query
+# output: ()
+sub updateCache {
+  my ($checkRegexResponse) = @_;
+
+  my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cache-client.js";
+  if (not -f $cacheClient) {
+    &log("updateCache: Could not find client $cacheClient");
+    return;
+  }
+
+  # Build "query".
+  my $cacheQuery = {
+    "pattern"                      => $query->{pattern},
+    "language"                     => $query->{language},
+    "requestType"                  => $REQUEST_UPDATE,
+    "result"                       => $checkRegexResponse->{isVulnerable} ? $PATTERN_VULNERABLE : $PATTERN_SAFE,
+    "canDiscloseAnonymizedQueries" => $cacheConfig->{clientConfig}->{canDiscloseAnonymizedQueries},
+  };
+  if ($checkRegexResponse->{isVulnerable}) {
+    $cacheQuery->{evilInput} = $checkRegexResponse->{validateReport}->{evilInput};
+  }
+
+  my $tmpFile = "/tmp/detect-vuln_queryCache-$$.json";
+  &writeToFile("file"=>$tmpFile, "contents"=>encode_json($cacheQuery));
+  my ($rc, $out) = &cmd("$cacheClient $tmpFile 2>>$progressFile");
+  unlink $tmpFile;
+
+  &log("updateCache: rc $rc out\n$out");
+  return;
+}
+
+# input: ($cacheResponse) from &queryCache
+# output: has all the fields that a local query has, plus '"_fromCache": 1'
+sub translateCacheResponse {
+  my ($cacheResponse) = @_;
+
+  my $checkRegexResponse = {
+    "_fromCache"   => 1,
+    "pattern"      => $cacheResponse->{pattern},
+    "language"     => $cacheResponse->{language},
+  };
+
+  if ($cacheResponse->{result} eq $PATTERN_SAFE) {
+    $checkRegexResponse->{isVulnerable} = 0;
+  }
+  elsif ($cacheResponse->{result} eq $PATTERN_VULNERABLE) {
+    $checkRegexResponse->{isVulnerable} = 1;
+    $checkRegexResponse->{validateReport} = {
+      "pattern"   => $cacheResponse->{pattern},
+      "language"  => $cacheResponse->{language},
+      "evilInput" => $cacheResponse->{evilInput}
+    };
+  }
+
+  return $checkRegexResponse;
+}
+
+##############################
+
+# input: %args: keys: file
+# output: $contents
+sub readFile {
+  my %args = @_;
+
+	open(my $FH, '<', $args{file}) or die "Error, could not read $args{file}: $!\n";
+	my $contents = do { local $/; <$FH> }; # localizing $? wipes the line separator char, so <> gets it all at once.
+	close $FH;
+
+  return $contents;
+}
 
 # input: %args: keys: file contents
 # output: $file

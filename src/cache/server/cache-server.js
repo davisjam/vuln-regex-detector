@@ -84,7 +84,10 @@ function createID(pattern, language) {
 	return `/${pattern}/:${language}`;
 }
 
-// Returns a Promise that resolves to one of the PATTERN_X results.
+// Returns a Promise that resolves to:
+//   PATTERN_INVALID: invalid query
+//   PATTERN_UNKNOWN: unknown pattern/language combination
+//   doc: found it, returns the doc from the DB
 function isVulnerable(body) {
 	// Reject invalid queries
 	if (!body) {
@@ -116,17 +119,17 @@ function isVulnerable(body) {
 // Returns a Promise that resolves to one of the PATTERN_X results.
 function collectionLookup(collection, query) {
 	return collection.find({_id: createID(query.pattern, query.language)}, {result: 1}).toArray()
-		.then((items) => {
-			if (items.length === 0) {
+		.then((docs) => {
+			if (docs.length === 0) {
 				log(`collectionLookup ${createID(query.pattern,query.language)}: no results`);
 				return Promise.resolve(PATTERN_UNKNOWN);
 			}
-			else if (items.length === 1) {
-				log(`collectionLookup ${query.pattern}-${query.language}: result: ${items[0].result}`);
-				return Promise.resolve(items[0].result);
+			else if (docs.length === 1) {
+				log(`collectionLookup ${query.pattern}-${query.language}: result: ${docs[0].result}`);
+				return Promise.resolve(docs[0]);
 			}
 			else {
-				log(`collectionLookup unexpected multiple match: ${JSON.stringify(items)}`);
+				log(`collectionLookup unexpected multiple match: ${JSON.stringify(docs)}`);
 				return Promise.resolve(PATTERN_UNKNOWN);
 			}
 		})
