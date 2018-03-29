@@ -1,0 +1,22 @@
+{
+	"clientConfig": {
+		"useCache": 1,
+		"cacheServer": "woody.cs.vt.edu",
+		"cachePort": 8000,
+		"canDiscloseAnonymizedQueries": 1
+	},
+	"serverConfig": {
+		"serverPort": 8000,
+		"serverCredentials": {
+			"key": "VULN_REGEX_DETECTOR_ROOT/src/cache/server/keys/key.pem",
+			"cert": "VULN_REGEX_DETECTOR_ROOT/src/cache/server/keys/cert.pem"
+		},
+		"dbConfig": {
+			"dbServer": "localhost",
+			"dbPort": "27017",
+			"dbName": "regexCache",
+			"dbLookupCollection": "lookup_9",
+			"dbUploadCollection": "upload_9"
+		}
+	}
+}
