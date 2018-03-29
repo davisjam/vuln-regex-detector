@@ -226,7 +226,7 @@ function determineSafety(doc) {
 			};
 		}
     else {
-      log(`Client was correct, not vulnerable (or analysis timed out).`);
+      log(`Not vulnerable (or analysis timed out).`);
       return {
         _id: doc._id,
         pattern: doc.pattern,
