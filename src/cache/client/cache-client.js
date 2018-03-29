@@ -35,7 +35,8 @@ if (!config.clientConfig.useCache) {
 
 // Args.
 if (process.argv.length != 3) {
-	die(`Usage: ${process.argv[1]} queryFile`);
+	console.error(`Usage: ${process.argv[1]} queryFile`);
+	process.exit(1);
 }
 const queryFile = process.argv[2];
 
@@ -115,5 +116,5 @@ function die(msg) {
 }
 
 function log(msg) {
-	console.error(msg);
+	console.error(new Date().toISOString() + `: ${msg}`);
 }
