@@ -138,13 +138,19 @@ MongoClient.connect(dbUrl)
 			return;
 		}
 
-	}, (error, obj) => {
+	},
+	// CB when all docs have been tested.
+	(error) => {
 		log(`Awaiting ${pending.length} promises (error ${error})`);
 		// Could be MongoClient errors. Ignore.
 		const pendingAllResolve = pending.map(reflect);
 		const allPending = Promise.all(pendingAllResolve);
 		allPending.then((result) => {
 			log(`Done`);
+			return client.close();
+		})
+		.catch((e) => {
+			log(`db error: ${JSON.stringify(e)}`);
 			return client.close();
 		});
 	});
