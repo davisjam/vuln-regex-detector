@@ -69,8 +69,8 @@ Note:
 
 If you want to set up your own cache:
 1. Set up `server/cache-server.js` to run forever.
-2. Configure `server/validate-uploads.js` as an flock-guarded cron job.
-3. Tweak `.config.json` with the appropriate information.
+2. Configure `server/validate-uploads.js` as a flock-guarded cron job.
+3. Tweak `.config.json` with your server and DB details.
 
 ## Default
 
@@ -78,3 +78,7 @@ This is the default cache configuration:
 - The cache is enabled.
 - It queries our server.
 - You give us permission to disclose your anonymized queries.
+
+# Disabling the cache
+
+Edit `.config.json`: set the `useCache` field to `0`.
