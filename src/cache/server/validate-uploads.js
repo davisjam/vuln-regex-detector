@@ -90,7 +90,15 @@ MongoClient.connect(dbUrl)
 			//   - B fails with short time budget and uploads.
 			//   - We fail with short time budget, *overwriting* the previous finding.
 			const accurateDoc = determineSafety(doc);
-			if (accurateDoc.result === PATTERN_SAFE) {
+
+      // On error, just delete.
+      if (!accurateDoc) {
+        log(`Failure while determining safety`);
+        pending.push(deleteDoc(uploadCollection, doc));
+        return;
+      }
+      // Otherwise, log whether client was correct and update the tables.
+      else if (accurateDoc.result === PATTERN_SAFE) {
 				log(`Truly safe`);
 			}
 			else {
@@ -194,16 +202,14 @@ function validateVuln(doc) {
 }
 
 // Given an untrusted doc, query check-regex.pl.
-// Return a trusted doc.
+// Return a trusted doc or undefined.
 // Timeouts are treated as safe -- prefer false negatives to false positives.
 function determineSafety(doc) {
-	const checkRegexQuery = { pattern: doc.pattern, validateVuln_language: doc.language, validateVuln_nPumps: 250000, validateVuln_timeLimit: 1 };
-
-	const tmpFile = `/tmp/validate-uploads-${process.pid}.json`;
-	fs.writeFileSync(tmpFile, JSON.stringify(checkRegexQuery));
-
-	const safeDoc = { _id: doc._id, pattern: doc.pattern, language: doc.language, result: PATTERN_SAFE };
+  const tmpFile = `/tmp/validate-uploads-${process.pid}.json`;
 	try {
+    const checkRegexQuery = { pattern: doc.pattern, validateVuln_language: doc.language, validateVuln_nPumps: 250000, validateVuln_timeLimit: 1 };
+    fs.writeFileSync(tmpFile, JSON.stringify(checkRegexQuery));
+
 		const stdout = child_process.execSync(`${process.env.VULN_REGEX_DETECTOR_ROOT}/bin/check-regex.pl ${tmpFile} 2>/dev/null`, {encoding: 'utf8'});
 		const result = JSON.parse(stdout);
 		log(JSON.stringify(result));
@@ -217,12 +223,21 @@ function determineSafety(doc) {
 				evilInput: result.validateReport.evilInput
 			};
 		}
+    else {
+      log(`Client was correct, not vulnerable (or analysis timed out).`);
+      return {
+        _id: doc._id,
+        pattern: doc.pattern,
+        language: doc.language,
+        result: PATTERN_SAFE
+      };
+    }
 	} catch (e) {
 		log(`Error: ${JSON.stringify(e)}`);
-		return safeDoc;
+		return undefined;
 	} finally {
 		fs.unlinkSync(tmpFile);
 	}
 
-	return safeDoc;
+	return undefined;
 }
