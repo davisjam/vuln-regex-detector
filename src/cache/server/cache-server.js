@@ -127,36 +127,48 @@ function isVulnerable(body) {
 		.then((client) => {
 			const db = client.db(dbName);
 			log(`isVulnerable: connected, now querying DB for { ${body.pattern}, ${body.language} }`);
-			return collectionLookup(db.collection(dbLookupCollectionName), {pattern: body.pattern, language: body.language});
+
+			return collectionLookup(db.collection(dbLookupCollectionName), {pattern: body.pattern, language: body.language})
+				.then((result) => {
+					client.close();
+					return result;
+				})
+				.catch((e) => {
+					log(`isVulnerable: db error: ${e}`);
+					client.close();
+					return Promise.resolve(PATTERN_UNKNOWN);
+				});
 		})
 		.catch((e) => {
 			log(`isVulnerable: db error: ${e}`);
 			return Promise.resolve(PATTERN_UNKNOWN);
-		});
+		})
 }
 
 // Helper for isVulnerable.
 // Returns a Promise that resolves to one of the PATTERN_X results.
 function collectionLookup(collection, query) {
 	return collection.find({_id: createID(query.pattern, query.language)}, {result: 1}).toArray()
-		.then((docs) => {
-			if (docs.length === 0) {
-				log(`collectionLookup ${createID(query.pattern,query.language)}: no results`);
+		.then(
+			(docs) => {
+				if (docs.length === 0) {
+					log(`collectionLookup ${createID(query.pattern,query.language)}: no results`);
+					return Promise.resolve(PATTERN_UNKNOWN);
+				}
+				else if (docs.length === 1) {
+					log(`collectionLookup ${query.pattern}-${query.language}: result: ${docs[0].result}`);
+					return Promise.resolve(docs[0]);
+				}
+				else {
+					log(`collectionLookup unexpected multiple match: ${JSON.stringify(docs)}`);
+					return Promise.resolve(PATTERN_UNKNOWN);
+				}
+			},
+			(e) => {
+				log(`collectionLookup error: ${e}`);
 				return Promise.resolve(PATTERN_UNKNOWN);
-			}
-			else if (docs.length === 1) {
-				log(`collectionLookup ${query.pattern}-${query.language}: result: ${docs[0].result}`);
-				return Promise.resolve(docs[0]);
-			}
-			else {
-				log(`collectionLookup unexpected multiple match: ${JSON.stringify(docs)}`);
-				return Promise.resolve(PATTERN_UNKNOWN);
-			}
-		})
-		.catch((e) => {
-			log(`collectionLookup error: ${e}`);
-			return Promise.resolve(PATTERN_UNKNOWN);
-		});
+			},
+		);
 }
 
 // Returns a Promise that resolves to one of the PATTERN_X results.
@@ -205,14 +217,24 @@ function reportResult(body) {
 			log(`reportResult: new result, updating dbUploadCollectionName`);
 			return MongoClient.connect(dbUrl)
 				.then((client) => {
-					const db = client.db(dbName);
-					log(`reportResult: connected, now updating DB for {${body.pattern}, ${body.language}} with ${body.result}`);
-					return collectionUpdate(db.collection(dbUploadCollectionName), {pattern: body.pattern, language: body.language, result: body.result, evilInput: body.evilInput});
-				})
-				.catch((e) => {
-					log(`isVulnerable: db error: ${e}`);
-					return Promise.resolve(PATTERN_UNKNOWN);
-				});
+						const db = client.db(dbName);
+						log(`reportResult: connected, now updating DB for {${body.pattern}, ${body.language}} with ${body.result}`);
+						return collectionUpdate(db.collection(dbUploadCollectionName), {pattern: body.pattern, language: body.language, result: body.result, evilInput: body.evilInput})
+							.then((result) => {
+								client.close()
+								return result;
+							})
+							.catch((e) => {
+								log(`reportResult: db error: ${e}`);
+								client.close()
+								return Promise.resolve(PATTERN_UNKNOWN);
+							});
+					)
+					.catch((e) => {
+						log(`reportResult: db error: ${e}`);
+						return Promise.resolve(PATTERN_UNKNOWN);
+					}
+				);
 	});
 }
 
