@@ -65,6 +65,7 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP], jsonParser, function (req, res) {
 			// Send response.
 			res.setHeader('Content-Type', 'application/json');
 			res.send(JSON.stringify({ result: result }));
+			res.end();
 
 			// On valid queries that we can't answer...
 			if (result === PATTERN_UNKNOWN) {
@@ -89,6 +90,7 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_UPDATE], jsonParser, function (req, res) {
 
 			res.setHeader('Content-Type', 'application/json');
 			res.send(JSON.stringify({ result: 'Thank you!' }));
+			res.end();
 		});
 })
 
