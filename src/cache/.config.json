@@ -15,8 +15,8 @@
 			"dbServer": "localhost",
 			"dbPort": "27017",
 			"dbName": "regexCache",
-			"dbLookupCollection": "lookup_8",
-			"dbUploadCollection": "upload_8"
+			"dbLookupCollection": "lookup_9",
+			"dbUploadCollection": "upload_9"
 		}
 	}
 }
