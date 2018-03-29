@@ -45,7 +45,7 @@ my @requiredPackages_ubuntu = (@miscPackages_ubuntu, @rxxr2Packages_ubuntu, @wus
 
 # npm install my node modules
 &log("Configuring node modules");
-my @nodeModuleDirs = map { "$ENV{VULN_REGEX_DETECTOR_ROOT}/$_" } ("src/extract/src/javascript/");
+my @nodeModuleDirs = map { "$ENV{VULN_REGEX_DETECTOR_ROOT}/$_" } ("src/extract/src/javascript/", "src/cache/client/", "src/cache/server/");
 for my $dir (@nodeModuleDirs) {
   chdir $dir or die "Error, chdir failed: $!\n";
   &chkcmd("npm install");
