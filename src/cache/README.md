@@ -37,9 +37,13 @@ Then server will answer the query in the background and eventually update its ta
 # Consent and privacy
 
 By enabling this service, you will be consenting to send vulnerability queries to our server.
-These queries will contain: (1) your regexes, (2) the language in which you are using them.
-Because a regex can be safe in one language and vulnerable in another, we need both pieces of information.
-For obvious reasons, queries will also include the client's IP address and the current time.
+Each query contains the following data:
+1. The regex.
+2. The programming language (since vulnerabilities vary by language).
+
+Obviously we will also get metadata like:
+1. Your IP address.
+2. The current time.
 
 Queries are sent using HTTPS so only you and we will know about them.
 
