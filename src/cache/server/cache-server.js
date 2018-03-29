@@ -266,5 +266,5 @@ function die(msg) {
 }
 
 function log(msg) {
-	console.error(msg);
+	console.error(new Date().toISOString() + `: ${msg}`);
 }

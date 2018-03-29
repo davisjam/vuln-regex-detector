@@ -41,8 +41,10 @@ const dbLookupCollectionName = config.serverConfig.dbConfig.dbLookupCollection;
 const dbUploadCollectionName = config.serverConfig.dbConfig.dbUploadCollection;
 
 // Connect to DB.
+log(`Connecting to DB ${dbUrl}`);
 MongoClient.connect(dbUrl)
 .then((client) => {
+	log(`Connected`);
 	// Get collection.
 	const db = client.db(dbName);
 
@@ -50,7 +52,7 @@ MongoClient.connect(dbUrl)
 	const lookupCollection = db.collection(dbLookupCollectionName);
 
 	// Pending promises for DB updates resulting from scan of docs.
-	log(`Connected, now handling each doc`);
+	log(`Handling each doc in ${dbUploadCollectionName}`);
 	let pending = [];
 	return uploadCollection.find().forEach((doc) => {
 		// Test each doc.
@@ -170,7 +172,7 @@ function reflect(promise){
 }
 
 function log(msg) {
-	console.error(msg);
+	console.error(new Date().toISOString() + `: ${msg}`);
 }
 
 function insertDoc(collection, doc) {
@@ -189,13 +191,15 @@ function deleteDoc(collection, doc) {
 
 // Return true if doc is truthful (describes a vulnerable regex), else false.
 function validateVuln(doc) {
+	log(`validateVuln: doc ${JSON.stringify(doc)}`);
 	const validateVulnQuery = { pattern: doc.pattern, language: doc.language, evilInput: doc.evilInput, nPumps: 250000, timeLimit: 1 };
 
 	const tmpFile = `/tmp/validate-uploads-${process.pid}.json`;
 	fs.writeFileSync(tmpFile, JSON.stringify(validateVulnQuery));
 
 	try {
-		const stdout = child_process.execSync(`${process.env.VULN_REGEX_DETECTOR_ROOT}/src/validate/validate-vuln.pl ${tmpFile} 2>/dev/null`, {encoding: 'utf8'});
+		const cmd = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/validate/validate-vuln.pl ${tmpFile} 2>/dev/null`;
+		const stdout = child_process.execSync(cmd, {encoding: 'utf8'});
 		const result = JSON.parse(stdout);
 		log(JSON.stringify(result));
 		return result.timedOut === 1;
@@ -213,12 +217,16 @@ function validateVuln(doc) {
 // Return a trusted doc or undefined.
 // Timeouts are treated as safe -- prefer false negatives to false positives.
 function determineSafety(doc) {
+	log(`determineSafety: doc ${JSON.stringify(doc)}`);
+
   const tmpFile = `/tmp/validate-uploads-${process.pid}.json`;
 	try {
     const checkRegexQuery = { pattern: doc.pattern, validateVuln_language: doc.language, validateVuln_nPumps: 250000, validateVuln_timeLimit: 1 };
     fs.writeFileSync(tmpFile, JSON.stringify(checkRegexQuery));
 
-		const stdout = child_process.execSync(`${process.env.VULN_REGEX_DETECTOR_ROOT}/bin/check-regex.pl ${tmpFile} 2>/dev/null`, {encoding: 'utf8'});
+		const cmd = `${process.env.VULN_REGEX_DETECTOR_ROOT}/bin/check-regex.pl ${tmpFile} 2>/dev/null`;
+		log(cmd);
+		const stdout = child_process.execSync(cmd, {encoding: 'utf8'});
 		const result = JSON.parse(stdout);
 		log(JSON.stringify(result));
 		if (result.isVulnerable && result.validateReport.timedOut) {
