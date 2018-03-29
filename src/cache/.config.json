@@ -1,7 +1,7 @@
 {
 	"clientConfig": {
 		"useCache": 1,
-		"cacheServer": "woody.cs.vt.edu",
+		"cacheServer": "toybox.cs.vt.edu",
 		"cachePort": 8000,
 		"canDiscloseAnonymizedQueries": 1
 	},
@@ -15,8 +15,8 @@
 			"dbServer": "localhost",
 			"dbPort": "27017",
 			"dbName": "regexCache",
-			"dbLookupCollection": "lookup_9",
-			"dbUploadCollection": "upload_9"
+			"dbLookupCollection": "lookup_1",
+			"dbUploadCollection": "upload_1"
 		}
 	}
 }
