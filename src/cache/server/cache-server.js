@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 // TODO privacy policy
 // TODO log queries
+//
+// TODO Am I supposed to close DB connections after I query?
+//      If I remove the ' || body[f] === null', I get weird interactions
+//      between cache-server.js and validate-vulns.js.
 
 'use strict';
 
@@ -10,8 +14,9 @@ const PATTERN_SAFE       = 'SAFE';
 const PATTERN_UNKNOWN    = 'UNKNOWN';
 const PATTERN_INVALID    = 'INVALID';
 
-const REQUEST_LOOKUP = "LOOKUP";
-const REQUEST_UPDATE = "UPDATE";
+const REQUEST_LOOKUP      = "LOOKUP";
+const REQUEST_LOOKUP_ONLY = "LOOKUP_ONLY"; // Will only make a lookup, won't be submitting an UPDATE later.
+const REQUEST_UPDATE      = "UPDATE";
 
 const REQUEST_TYPE_TO_PATH = {}; 
 REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP] = '/api/lookup';
@@ -55,10 +60,22 @@ let jsonParser = bodyParser.json()
 app.post(REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP], jsonParser, function (req, res) {
 	logQuery(req.body);
 	log('Got POST to /api/lookup');
-	res.setHeader('Content-Type', 'application/json');
 	isVulnerable(req.body)
 		.then((result) => {
+			// Send response.
+			res.setHeader('Content-Type', 'application/json');
 			res.send(JSON.stringify({ result: result }));
+
+			// On valid queries that we can't answer...
+			if (result === PATTERN_UNKNOWN) {
+				// If the client will not be computing result themselves:
+				//   Add to our list so validate will get us the answer later.
+				if (req.body.hasOwnProperty('requestType') && req.body.requestType === REQUEST_LOOKUP_ONLY) {
+					req.body.result = PATTERN_UNKNOWN;
+					log(`Client says ${req.body.requestType}, so calling reportResult with ${JSON.stringify(req.body)}`);
+					reportResult(req.body);
+				}
+			}
 		});
 })
 
@@ -69,6 +86,7 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_UPDATE], jsonParser, function (req, res) {
 		.then((result) => {
 			console.log(result);
 			log(`Update resulted in ${result} from ${JSON.stringify(req.body)}.`);
+
 			res.setHeader('Content-Type', 'application/json');
 			res.send(JSON.stringify({ result: 'Thank you!' }));
 		});
@@ -95,7 +113,7 @@ function isVulnerable(body) {
 	}
 	let isInvalid = false;
 	['pattern', 'language'].forEach((f) => {
-		if (!body.hasOwnProperty(f)) {
+		if (!body.hasOwnProperty(f) || body[f] === null) {
 			isInvalid = true;
 		}
 	});
@@ -143,27 +161,33 @@ function collectionLookup(collection, query) {
 function reportResult(body) {
 	// Reject invalid reports.
 	if (!body) {
+		log(`reportResult: no body`);
 		return Promise.resolve(PATTERN_INVALID);
 	}
 
 	// Required fields.
 	let isInvalid = false;
 	['pattern', 'language', 'result'].forEach((f) => {
-		if (!body.hasOwnProperty(f)) {
+		if (!body.hasOwnProperty(f) || body[f] === null) {
 			isInvalid = true;
 		}
 	});
 	if (isInvalid) {
+		log(`reportResult: invalid: ${JSON.stringify(body)}`);
 		return Promise.resolve(PATTERN_INVALID);
 	}
 
-	// Must be vulnerable or safe.
-	if (body.result !== PATTERN_VULNERABLE && body.result !== PATTERN_SAFE) {
+	// Supported results.
+	if (body.result === PATTERN_UNKNOWN || body.result === PATTERN_SAFE || body.result === PATTERN_VULNERABLE) {
+	}
+	else {
+		log(`reportResult: invalid result ${body.result}`);
 		return Promise.resolve(PATTERN_INVALID);
 	}
 
 	// Vulnerable must include proof.
 	if (body.result === PATTERN_VULNERABLE && !body.hasOwnProperty('evilInput')) {
+		log(`reportResult: ${body.result} but no evilInput`);
 		return Promise.resolve(PATTERN_INVALID);
 	}
 

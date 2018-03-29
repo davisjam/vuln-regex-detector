@@ -9,12 +9,14 @@ const PATTERN_SAFE       = 'SAFE';
 const PATTERN_UNKNOWN    = 'UNKNOWN';
 const PATTERN_INVALID    = 'INVALID';
 
-const REQUEST_LOOKUP = "LOOKUP";
-const REQUEST_UPDATE = "UPDATE";
+const REQUEST_LOOKUP      = "LOOKUP";
+const REQUEST_LOOKUP_ONLY = "LOOKUP_ONLY"; // Will only make a lookup, won't be submitting an UPDATE later.
+const REQUEST_UPDATE      = "UPDATE";
 
 const REQUEST_TYPE_TO_PATH = {};
-REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP] = '/api/lookup';
-REQUEST_TYPE_TO_PATH[REQUEST_UPDATE] = '/api/update';
+REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP]      = '/api/lookup';
+REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP_ONLY] = '/api/lookup';
+REQUEST_TYPE_TO_PATH[REQUEST_UPDATE]      = '/api/update';
 
 // Modules.
 const fs    = require('fs');
@@ -42,7 +44,7 @@ const query = JSON.parse(fs.readFileSync(queryFile));
 
 const requiredFields = ['pattern', 'language', 'requestType'];
 requiredFields.forEach((f) => {
-	if (!query.hasOwnProperty(f)) {
+	if (!query.hasOwnProperty(f) || query[f] === null) {
 		die(`Invalid queryFile ${queryFile}: Missing requiredField ${f}`);
 	}
 });

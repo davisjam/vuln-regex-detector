@@ -54,7 +54,7 @@ MongoClient.connect(dbUrl)
 	let pending = [];
 	return uploadCollection.find().forEach((doc) => {
 		// Test each doc.
-		log(JSON.stringify(doc));
+		log(`Got doc: ${JSON.stringify(doc)}`);
 
 		let isInvalid = false;
 		['pattern', 'language', 'result'].forEach((f) => {
@@ -69,8 +69,8 @@ MongoClient.connect(dbUrl)
 			return;
 		}
 
-		// OK, now we have a report of PATTERN_SAFE or PATTERN_VULNERABLE.
-		// Run SAFE through check-regex.pl.
+		// OK, now we have a report of PATTERN_{UNKNOWN, SAFE, VULNERABLE}.
+		// Run UNKNOWN/SAFE through check-regex.pl.
 		// Run VULNERABLE through validate-vuln.pl.
 		// No matter the outcome, doc should be removed from uploadCollection.
 		//
@@ -78,7 +78,7 @@ MongoClient.connect(dbUrl)
 		// Could parallelize to multiple cores using child_process.exec instead of child_process.execSync.
 		const deleteUploadDoc = function() { return deleteDoc(uploadCollection, doc); };
 
-		if (doc.result === PATTERN_SAFE) {
+		if (doc.result === PATTERN_UNKNOWN || doc.result === PATTERN_SAFE) {
 			// No proof, so we have to run check-regex.pl to confirm.
 			// Then we have ground truth so we can update the DB either way.
 			// Useful to know, however, whether the client "lied" to us.
@@ -97,12 +97,15 @@ MongoClient.connect(dbUrl)
         pending.push(deleteDoc(uploadCollection, doc));
         return;
       }
+
       // Otherwise, log whether client was correct and update the tables.
-      else if (accurateDoc.result === PATTERN_SAFE) {
-				log(`Truly safe`);
-			}
-			else {
-				log(`Not truly safe -- FALSE REPORT`);
+			if (doc.result === PATTERN_SAFE) {
+				if (accurateDoc === PATTERN_SAFE) {
+					log(`Truly safe`);
+				}
+				else {
+					log(`Not truly safe -- FALSE REPORT`);
+				}
 			}
 			pending.push(insertDoc(lookupCollection, accurateDoc)
 									 .then(deleteUploadDoc, deleteUploadDoc));
@@ -171,7 +174,6 @@ function insertDoc(collection, doc) {
 	// an initial conclusion of SAFE, e.g. after the introduction
 	// of a new detector.
 	return collection.findOneAndReplace({_id: doc._id}, doc, {upsert: true});
-	//return collection.insert(doc);
 }
 
 function deleteDoc(collection, doc) {
@@ -214,7 +216,7 @@ function determineSafety(doc) {
 		const result = JSON.parse(stdout);
 		log(JSON.stringify(result));
 		if (result.isVulnerable && result.validateReport.timedOut) {
-			log(`Vulnerable! Client lied.`);
+			log(`Vulnerable!`);
 			return {
 				_id: doc._id,
 				pattern: doc.pattern,
