@@ -123,10 +123,13 @@ function isVulnerable(body) {
 		return Promise.resolve(PATTERN_INVALID);
 	}
 
+	log(`isVulnerable: Connecting to ${dbUrl}`);
 	return MongoClient.connect(dbUrl)
 		.then((client) => {
+			log(`isVulnerable: Connected`);
+
 			const db = client.db(dbName);
-			log(`isVulnerable: connected, now querying DB for { ${body.pattern}, ${body.language} }`);
+			log(`isVulnerable: Got db ${dbName}`);
 
 			return collectionLookup(db.collection(dbLookupCollectionName), {pattern: body.pattern, language: body.language})
 				.then((result) => {
@@ -148,9 +151,12 @@ function isVulnerable(body) {
 // Helper for isVulnerable.
 // Returns a Promise that resolves to one of the PATTERN_X results.
 function collectionLookup(collection, query) {
-	return collection.find({_id: createID(query.pattern, query.language)}, {result: 1}).toArray()
+	const id = createID(query.pattern, query.language);
+	log(`collectionLookup: querying for ${id}`);
+	return collection.find({_id: id}, {result: 1}).toArray()
 		.then(
 			(docs) => {
+				log(`collectionLookup: Got ${docs.length} docs`);
 				if (docs.length === 0) {
 					log(`collectionLookup ${createID(query.pattern,query.language)}: no results`);
 					return Promise.resolve(PATTERN_UNKNOWN);

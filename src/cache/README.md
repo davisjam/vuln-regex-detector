@@ -82,3 +82,11 @@ This is the default cache configuration:
 # Disabling the cache
 
 Edit `.config.json`: set the `useCache` field to `0`.
+
+# Debugging the cache
+
+Hit it with curl:
+
+```
+curl -d '{"pattern":"(a+)+$","language":"javascript","requestType":"LOOKUP"}' -H 'Content-Type: application/json' -X POST https://toybox.cs.vt.edu:8000/api/lookup -k --verbose
+```
