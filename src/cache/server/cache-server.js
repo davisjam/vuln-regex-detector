@@ -229,7 +229,7 @@ function reportResult(body) {
 								client.close()
 								return Promise.resolve(PATTERN_UNKNOWN);
 							});
-					)
+					})
 					.catch((e) => {
 						log(`reportResult: db error: ${e}`);
 						return Promise.resolve(PATTERN_UNKNOWN);
