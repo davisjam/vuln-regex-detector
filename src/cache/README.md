@@ -5,16 +5,34 @@ Once a regex has been queried once, there's no need to query it again.
 If we can save the result (cache/[memoize](https://en.wikipedia.org/wiki/Memoization) it), we'll get vast speedups.
 
 In addition, the same regexes often appear in multiple projects.
-So if two projects use the same regex, this regex can be calculated once and the results used in both places.
+So if two projects use the same regex, this regex can be checked once and the results used in both places.
 
-# How the cache works
+# Interacting with the cache
 
-Caching is used during the Detect phase.
+- The server side is `server/cache-server.js`. It accepts POST queries to `/api/lookup` and `/api/update`.
+- The client side is `client/cache-client.js`.
 
-1. Before `detect-vuln.pl` queries the detectors, it first queries our remote database. If no hit, the detectors are queried locally. This querying is also performed by `check-file.pl` to filter out regexes for `detect-vuln.pl` in a batch, reducing network traffic.
-2. After a local detector query, `detect-vuln.pl` sends each new result to our remote database to accelerate subsequent queries.
+## Generous client
 
-These are both implemented by `src/client/cache-client.js` using POST queries.
+If you do not disable the cache, `check-regex.pl` interacts with the cache in two ways:
+
+1. Before `detect-vuln.pl` queries the detectors, it first queries our server. If no hit, the detectors are queried locally.
+2. After a local detector query, `detect-vuln.pl` sends the result to our server to accelerate subsequent queries (thank you!).
+
+It uses `client/cache-client.js` to make these queries.
+
+## Lazy client
+
+You might want to use a cache-only configuration.
+This way your client would not use the detectors itself, but would instead rely exclusively on the cache.
+If the cache has the regex, great!
+Otherwise, say "UNKNOWN" rather than paying the cost of the detectors locally.
+
+One place to use this configuration is in a linter, where performance is more important than accuracy.
+
+With a lazy client, use the `LOOKUP\_ONLY` mode of `client/cache-client.js`.
+This tells the server that no subsequent result will be coming from the client.
+Then server will answer the query in the background and eventually update its table for future lookups on the same regex.
 
 # Consent and privacy
 
@@ -38,7 +56,17 @@ We will save your anonymized queries to accelerate future lookups (yours and any
 
 The cache configuration is stored here: `$VULN_REGEX_DETECTOR_ROOT/src/cache/.config.json`.
 All parameters are included.
-If you want to set up your own server, see `src/server/cache-server.js`.
+
+Note:
+- The anonymity parameter is not implemented, open an issue if you want it.
+- However, I haven't implemented any query tracking either.
+
+## Setting up your own cache
+
+If you want to set up your own cache:
+1. Set up `server/cache-server.js` to run forever.
+2. Configure `server/validate-uploads.js` as an flock-guarded cron job.
+3. Tweak `.config.json` with the appropriate information.
 
 ## Default
 
