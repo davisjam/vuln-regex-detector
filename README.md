@@ -27,6 +27,13 @@ See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/extra
 In this stage the regexes are tested for vulnerability.
 See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/detect/README.md) for more details.
 
+Testing regexes for vulnerability is expensive.
+As a result, the default configuration of this repo is to query a server to see if the regex has previously been tested for safety.
+See [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/cache/README.md) for more details.
+
+If this is a problem you can turn it off or direct queries to your own server by editing `src/cache/.config.json` in your clone.
+The source for the server is included in `src/cache`.
+
 ## Vulnerability validation
 
 In this stage the results of the vulnerability tests are validated.

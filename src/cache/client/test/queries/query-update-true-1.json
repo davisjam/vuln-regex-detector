@@ -1,0 +1,1 @@
+{"pattern":"^(.+)[ \\t]*\\n=+[ \\t]*\\n+","language":"javascript","requestType":"UPDATE","result":"VULNERABLE","evilInput":{"pumpPairs":[{"pump":"\t","prefix":"a"}],"suffix":"="}}
