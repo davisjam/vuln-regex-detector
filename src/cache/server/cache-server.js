@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 // TODO privacy policy
 // TODO log queries
-//
-// TODO Am I supposed to close DB connections after I query?
-//      If I remove the ' || body[f] === null', I get weird interactions
-//      between cache-server.js and validate-vulns.js.
 
 'use strict';
 
@@ -19,8 +15,10 @@ const REQUEST_LOOKUP_ONLY = "LOOKUP_ONLY"; // Will only make a lookup, won't be 
 const REQUEST_UPDATE      = "UPDATE";
 
 const REQUEST_TYPE_TO_PATH = {}; 
-REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP] = '/api/lookup';
-REQUEST_TYPE_TO_PATH[REQUEST_UPDATE] = '/api/update';
+// The LOOKUP/_ONLY requests use the same path.
+REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP]      = '/api/lookup';
+REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP_ONLY] = REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP];
+REQUEST_TYPE_TO_PATH[REQUEST_UPDATE]      = '/api/update';
 
 // Modules.
 const https       = require('https');
@@ -57,9 +55,15 @@ const httpsServer = https.createServer(credentials, app);
 // create application/json parser
 let jsonParser = bodyParser.json()
 
+// Logging
+app.all('*', (req, res, next) => {
+	log(`New request: from ${JSON.stringify(req.connection)} headers ${JSON.stringify(req.headers)} body ${JSON.stringify(req.body)}`);
+	next();
+});
+
 app.post(REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP], jsonParser, function (req, res) {
-	logQuery(req.body);
-	log('Got POST to /api/lookup');
+	log(`Got POST to ${REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP]}`);
+
 	isVulnerable(req.body)
 		.then((result) => {
 			// Send response.
@@ -81,16 +85,18 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP], jsonParser, function (req, res) {
 })
 
 app.post(REQUEST_TYPE_TO_PATH[REQUEST_UPDATE], jsonParser, function (req, res) {
-	logQuery(req.body);
-	log('Got POST to /api/update');
+	log(`Got POST to ${REQUEST_TYPE_TO_PATH[REQUEST_UPDATE]}`);
+
+	// Client can be told immediately.
+	res.setHeader('Content-Type', 'application/json');
+	res.send(JSON.stringify({ result: 'Thank you!' }));
+	res.end();
+
+	// In the background...
 	reportResult(req.body)
 		.then((result) => {
 			console.log(result);
 			log(`Update resulted in ${result} from ${JSON.stringify(req.body)}.`);
-
-			res.setHeader('Content-Type', 'application/json');
-			res.send(JSON.stringify({ result: 'Thank you!' }));
-			res.end();
 		});
 })
 
