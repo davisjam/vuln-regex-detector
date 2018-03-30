@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // TODO privacy policy
-// TODO log queries
+// TODO log queries better than to the console?
 
 'use strict';
 
@@ -26,6 +26,7 @@ const express     = require('express');
 const bodyParser  = require('body-parser');
 const fs          = require('fs');
 const MongoClient = require('mongodb').MongoClient;
+const jsonStringify = require('json-stringify-safe');
 
 // Config.
 if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
@@ -57,7 +58,7 @@ let jsonParser = bodyParser.json()
 
 // Logging
 app.all('*', (req, res, next) => {
-	log(`New request: from ${JSON.stringify(req.connection)} headers ${JSON.stringify(req.headers)} body ${JSON.stringify(req.body)}`);
+	log(`New request:\n  remoteAddress: ${jsonStringify(req.connection.remoteAddress)}\n  headers: ${jsonStringify(req.headers)}\n  body: ${jsonStringify(req.body)}`);
 	next();
 });
 
@@ -68,7 +69,7 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP], jsonParser, function (req, res) {
 		.then((result) => {
 			// Send response.
 			res.setHeader('Content-Type', 'application/json');
-			res.send(JSON.stringify({ result: result }));
+			res.send(jsonStringify({ result: result }));
 			res.end();
 
 			// On valid queries that we can't answer...
@@ -77,7 +78,7 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP], jsonParser, function (req, res) {
 				//   Add to our list so validate will get us the answer later.
 				if (req.body.hasOwnProperty('requestType') && req.body.requestType === REQUEST_LOOKUP_ONLY) {
 					req.body.result = PATTERN_UNKNOWN;
-					log(`Client says ${req.body.requestType}, so calling reportResult with ${JSON.stringify(req.body)}`);
+					log(`Client says ${req.body.requestType}, so calling reportResult with ${jsonStringify(req.body)}`);
 					reportResult(req.body);
 				}
 			}
@@ -89,14 +90,14 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_UPDATE], jsonParser, function (req, res) {
 
 	// Client can be told immediately.
 	res.setHeader('Content-Type', 'application/json');
-	res.send(JSON.stringify({ result: 'Thank you!' }));
+	res.send(jsonStringify({ result: 'Thank you!' }));
 	res.end();
 
 	// In the background...
 	reportResult(req.body)
 		.then((result) => {
 			console.log(result);
-			log(`Update resulted in ${result} from ${JSON.stringify(req.body)}.`);
+			log(`Update resulted in ${result} from ${jsonStringify(req.body)}.`);
 		});
 })
 
@@ -172,7 +173,7 @@ function collectionLookup(collection, query) {
 					return Promise.resolve(docs[0]);
 				}
 				else {
-					log(`collectionLookup unexpected multiple match: ${JSON.stringify(docs)}`);
+					log(`collectionLookup unexpected multiple match: ${jsonStringify(docs)}`);
 					return Promise.resolve(PATTERN_UNKNOWN);
 				}
 			},
@@ -199,7 +200,7 @@ function reportResult(body) {
 		}
 	});
 	if (isInvalid) {
-		log(`reportResult: invalid: ${JSON.stringify(body)}`);
+		log(`reportResult: invalid: ${jsonStringify(body)}`);
 		return Promise.resolve(PATTERN_INVALID);
 	}
 
@@ -262,7 +263,7 @@ function collectionUpdate(collection, result) {
 }
 
 function logQuery(req) {
-	log(JSON.stringify(req));
+	log(jsonStringify(req));
 	return;
 }
 
