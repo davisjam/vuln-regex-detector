@@ -95,7 +95,7 @@ MongoClient.connect(dbUrl)
 
       // On error, just delete.
       if (!accurateDoc) {
-        log(`Failure while determining safety`);
+        log(`Extreme failure while determining safety`);
         pending.push(deleteDoc(uploadCollection, doc));
         return;
       }
@@ -221,7 +221,13 @@ function determineSafety(doc) {
 
   const tmpFile = `/tmp/validate-uploads-${process.pid}.json`;
 	try {
-    const checkRegexQuery = { pattern: doc.pattern, validateVuln_language: doc.language, validateVuln_nPumps: 250000, validateVuln_timeLimit: 1 };
+    const checkRegexQuery = {
+			pattern: doc.pattern,
+			validateVuln_language: doc.language,
+			validateVuln_nPumps: 250000,
+			validateVuln_timeLimit: 1,
+			useCache: 0, // Using the cache would be somewhat circular.
+		};
     fs.writeFileSync(tmpFile, JSON.stringify(checkRegexQuery));
 
 		const cmd = `${process.env.VULN_REGEX_DETECTOR_ROOT}/bin/check-regex.pl ${tmpFile} 2>/dev/null`;
@@ -229,7 +235,7 @@ function determineSafety(doc) {
 		const stdout = child_process.execSync(cmd, {encoding: 'utf8'});
 		const result = JSON.parse(stdout);
 		log(JSON.stringify(result));
-		if (result.isVulnerable && result.validateReport.timedOut) {
+		if (result.isVulnerable && result.validateReport.timedOut) { // Vulnerable: detector plus validation
 			log(`Vulnerable!`);
 			return {
 				_id: doc._id,
@@ -240,6 +246,8 @@ function determineSafety(doc) {
 			};
 		}
     else {
+			// Detectors timed out or said it was safe.
+			// NB This permits false 'SAFE' reports into the database.
       log(`Not vulnerable (or analysis timed out).`);
       return {
         _id: doc._id,

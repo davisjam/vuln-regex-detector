@@ -35,9 +35,11 @@ my $cacheConfig;
 if (-f $cacheConfigFile) {
   $cacheConfig = decode_json(&readFile("file"=>$cacheConfigFile));
   if ($cacheConfig->{clientConfig}->{useCache}) {
+    &log("Config says to use the cache");
     $useCache = 1;
   }
 }
+&log("Config says useCache $useCache");
 
 my $detectVuln = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/detect-vuln.pl";
 my $validateVuln = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/validate-vuln.pl";
@@ -74,6 +76,11 @@ for my $key ("pattern", "validateVuln_language") {
   if (not defined $query->{$key}) {
     die "Error, must provide key $key\n";
   }
+}
+
+if (defined $query->{useCache} and not $query->{useCache}) {
+  &log("Query says I should not use the cache");
+  $useCache = 0;
 }
 
 # Query cache?
