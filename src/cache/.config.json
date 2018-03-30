@@ -12,7 +12,7 @@
 			"cert": "VULN_REGEX_DETECTOR_ROOT/src/cache/server/keys/cert.pem"
 		},
 		"dbConfig": {
-			"dbServer": "localhost",
+			"dbServer": "127.0.0.1",
 			"dbPort": "27017",
 			"dbName": "regexCache",
 			"dbLookupCollection": "lookup",
