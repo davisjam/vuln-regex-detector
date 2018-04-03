@@ -226,6 +226,7 @@ function determineSafety (doc) {
 
 	const tmpFile = `/tmp/validate-uploads-${process.pid}.json`;
 	try {
+		// Create query for check-regex.
 		const checkRegexQuery = {
 			pattern: doc.pattern,
 			validateVuln_language: doc.language,
@@ -236,11 +237,14 @@ function determineSafety (doc) {
 		log(`checkRegex query: ${JSON.stringify(checkRegexQuery)}`);
 		fs.writeFileSync(tmpFile, JSON.stringify(checkRegexQuery));
 
+		// Run query.
 		const cmd = `${process.env.VULN_REGEX_DETECTOR_ROOT}/bin/check-regex.pl ${tmpFile} 2>/dev/null`;
-		log(cmd);
+		log(`determineSafety: cmd ${cmd}`);
 		const stdout = childProcess.execSync(cmd, {encoding: 'utf8'});
 		const result = JSON.parse(stdout);
-		log(JSON.stringify(result));
+		log(`determineSafety: result ${JSON.stringify(result)}`);
+
+		// Interpret result.
 		if (result.isVulnerable && result.validateReport.timedOut) { // Vulnerable: detector plus validation
 			log(`Vulnerable!`);
 			return {
