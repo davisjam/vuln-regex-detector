@@ -10,11 +10,11 @@ const PATTERN_SAFE       = 'SAFE';
 const PATTERN_UNKNOWN    = 'UNKNOWN';
 const PATTERN_INVALID    = 'INVALID';
 
-const REQUEST_LOOKUP      = "LOOKUP";
-const REQUEST_LOOKUP_ONLY = "LOOKUP_ONLY"; // Will only make a lookup, won't be submitting an UPDATE later.
-const REQUEST_UPDATE      = "UPDATE";
+const REQUEST_LOOKUP      = 'LOOKUP';
+const REQUEST_LOOKUP_ONLY = 'LOOKUP_ONLY'; // Will only make a lookup, won't be submitting an UPDATE later.
+const REQUEST_UPDATE      = 'UPDATE';
 
-const REQUEST_TYPE_TO_PATH = {}; 
+const REQUEST_TYPE_TO_PATH = {};
 // The LOOKUP/_ONLY requests use the same path.
 REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP]      = '/api/lookup';
 REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP_ONLY] = REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP];
@@ -36,10 +36,9 @@ if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
 // config is determined by (1) VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE, or (2) location in dir tree.
 let configFile;
 if (process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE) {
-  configFile = process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE;
-}
-else {
-  configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
+	configFile = process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE;
+} else {
+	configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
 }
 const config = JSON.parse(fs.readFileSync(configFile));
 
@@ -50,10 +49,10 @@ const dbLookupCollectionName = config.serverConfig.dbConfig.dbLookupCollection;
 const dbUploadCollectionName = config.serverConfig.dbConfig.dbUploadCollection;
 
 // Server keys.
-const privateKeyFile = config.serverConfig.serverCredentials.key.replace("VULN_REGEX_DETECTOR_ROOT", process.env.VULN_REGEX_DETECTOR_ROOT);
+const privateKeyFile = config.serverConfig.serverCredentials.key.replace('VULN_REGEX_DETECTOR_ROOT', process.env.VULN_REGEX_DETECTOR_ROOT);
 const privateKey = fs.readFileSync(privateKeyFile, 'utf8');
 
-const certificateFile = config.serverConfig.serverCredentials.cert.replace("VULN_REGEX_DETECTOR_ROOT", process.env.VULN_REGEX_DETECTOR_ROOT);
+const certificateFile = config.serverConfig.serverCredentials.cert.replace('VULN_REGEX_DETECTOR_ROOT', process.env.VULN_REGEX_DETECTOR_ROOT);
 const certificate = fs.readFileSync(certificateFile, 'utf8');
 
 const credentials = {key: privateKey, cert: certificate};
@@ -62,7 +61,7 @@ const app = express();
 const httpsServer = https.createServer(credentials, app);
 
 // create application/json parser
-let jsonParser = bodyParser.json()
+let jsonParser = bodyParser.json();
 
 // Logging
 app.all('*', (req, res, next) => {
@@ -91,7 +90,7 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP], jsonParser, function (req, res) {
 				}
 			}
 		});
-})
+});
 
 app.post(REQUEST_TYPE_TO_PATH[REQUEST_UPDATE], jsonParser, function (req, res) {
 	log(`Got POST to ${REQUEST_TYPE_TO_PATH[REQUEST_UPDATE]}`);
@@ -107,15 +106,15 @@ app.post(REQUEST_TYPE_TO_PATH[REQUEST_UPDATE], jsonParser, function (req, res) {
 			console.log(result);
 			log(`Update resulted in ${result} from ${jsonStringify(req.body)}.`);
 		});
-})
+});
 
 httpsServer.listen(config.serverConfig.serverPort, function () {
 	log(`Listening on port ${config.serverConfig.serverPort}`);
-})
+});
 
-/////////////////////
+/* Helpers. */
 
-function createID(pattern, language) {
+function createID (pattern, language) {
 	return `/${pattern}/:${language}`;
 }
 
@@ -123,7 +122,7 @@ function createID(pattern, language) {
 //   PATTERN_INVALID: invalid query
 //   PATTERN_UNKNOWN: unknown pattern/language combination
 //   doc: found it, returns the doc from the DB
-function isVulnerable(body) {
+function isVulnerable (body) {
 	// Reject invalid queries
 	if (!body) {
 		return Promise.resolve(PATTERN_INVALID);
@@ -160,12 +159,12 @@ function isVulnerable(body) {
 		.catch((e) => {
 			log(`isVulnerable: db error: ${e}`);
 			return Promise.resolve(PATTERN_UNKNOWN);
-		})
+		});
 }
 
 // Helper for isVulnerable.
 // Returns a Promise that resolves to one of the PATTERN_X results.
-function collectionLookup(collection, query) {
+function collectionLookup (collection, query) {
 	const id = createID(query.pattern, query.language);
 	log(`collectionLookup: querying for ${id}`);
 	return collection.find({_id: id}, {result: 1}).toArray()
@@ -173,14 +172,12 @@ function collectionLookup(collection, query) {
 			(docs) => {
 				log(`collectionLookup: Got ${docs.length} docs`);
 				if (docs.length === 0) {
-					log(`collectionLookup ${createID(query.pattern,query.language)}: no results`);
+					log(`collectionLookup ${createID(query.pattern, query.language)}: no results`);
 					return Promise.resolve(PATTERN_UNKNOWN);
-				}
-				else if (docs.length === 1) {
+				} else if (docs.length === 1) {
 					log(`collectionLookup ${query.pattern}-${query.language}: result: ${docs[0].result}`);
 					return Promise.resolve(docs[0]);
-				}
-				else {
+				} else {
 					log(`collectionLookup unexpected multiple match: ${jsonStringify(docs)}`);
 					return Promise.resolve(PATTERN_UNKNOWN);
 				}
@@ -188,12 +185,12 @@ function collectionLookup(collection, query) {
 			(e) => {
 				log(`collectionLookup error: ${e}`);
 				return Promise.resolve(PATTERN_UNKNOWN);
-			},
+			}
 		);
 }
 
 // Returns a Promise that resolves to one of the PATTERN_X results.
-function reportResult(body) {
+function reportResult (body) {
 	// Reject invalid reports.
 	if (!body) {
 		log(`reportResult: no body`);
@@ -214,8 +211,7 @@ function reportResult(body) {
 
 	// Supported results.
 	if (body.result === PATTERN_UNKNOWN || body.result === PATTERN_SAFE || body.result === PATTERN_VULNERABLE) {
-	}
-	else {
+	} else {
 		log(`reportResult: invalid result ${body.result}`);
 		return Promise.resolve(PATTERN_INVALID);
 	}
@@ -238,29 +234,28 @@ function reportResult(body) {
 			log(`reportResult: new result, updating dbUploadCollectionName`);
 			return MongoClient.connect(dbUrl)
 				.then((client) => {
-						const db = client.db(dbName);
-						log(`reportResult: connected, now updating DB for {${body.pattern}, ${body.language}} with ${body.result}`);
-						return collectionUpdate(db.collection(dbUploadCollectionName), {pattern: body.pattern, language: body.language, result: body.result, evilInput: body.evilInput})
-							.then((result) => {
-								client.close()
-								return result;
-							})
-							.catch((e) => {
-								log(`reportResult: db error: ${e}`);
-								client.close()
-								return Promise.resolve(PATTERN_UNKNOWN);
-							});
-					})
-					.catch((e) => {
-						log(`reportResult: db error: ${e}`);
-						return Promise.resolve(PATTERN_UNKNOWN);
-					}
-				);
-	});
+					const db = client.db(dbName);
+					log(`reportResult: connected, now updating DB for {${body.pattern}, ${body.language}} with ${body.result}`);
+					return collectionUpdate(db.collection(dbUploadCollectionName), {pattern: body.pattern, language: body.language, result: body.result, evilInput: body.evilInput})
+						.then((result) => {
+							client.close();
+							return result;
+						})
+						.catch((e) => {
+							log(`reportResult: db error: ${e}`);
+							client.close();
+							return Promise.resolve(PATTERN_UNKNOWN);
+						});
+				})
+				.catch((e) => {
+					log(`reportResult: db error: ${e}`);
+					return Promise.resolve(PATTERN_UNKNOWN);
+				});
+		});
 }
 
 // Helper for reportResult.
-function collectionUpdate(collection, result) {
+function collectionUpdate (collection, result) {
 	result._id = createID(result.pattern, result.language);
 	return collection.insertOne(result)
 		.catch((e) => {
@@ -270,16 +265,11 @@ function collectionUpdate(collection, result) {
 		});
 }
 
-function logQuery(req) {
-	log(jsonStringify(req));
-	return;
-}
-
-function die(msg) {
+function die (msg) {
 	log(msg);
 	process.exit(1);
 }
 
-function log(msg) {
+function log (msg) {
 	console.error(new Date().toISOString() + `: ${msg}`);
 }
