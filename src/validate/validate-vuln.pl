@@ -98,8 +98,14 @@ sub writeToFile {
 
 sub cmd {
   my ($cmd) = @_;
+  &log($cmd);
   my $out = `$cmd`;
   my $rc = $? >> 8;
 
   return ($rc, $out);
+}
+
+sub log {
+  my ($msg) = @_;
+  print STDERR "$msg\n";
 }

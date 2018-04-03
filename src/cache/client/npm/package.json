@@ -1,0 +1,45 @@
+{
+  "name": "vuln-regex-detector",
+  "version": "1.0.0",
+  "description": "Detect vulnerable regexes by querying a service hosted at Virginia Tech.",
+  "main": "vuln-regex-detector-client.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.10.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.7.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "mocha": "^5.0.5"
+  },
+  "scripts": {
+    "test": "mocha",
+    "lint": "eslint vuln-regex-detector-client.js test/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davisjam/vuln-regex-detector.git"
+  },
+  "keywords": [
+    "regex",
+    "catastrophic",
+    "backtracking",
+    "regular",
+    "expressions",
+    "safe-regex",
+    "safer-regex",
+    "REDOS"
+  ],
+  "author": "Jamie Davis (davisjam)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/davisjam/vuln-regex-detector/issues"
+  },
+  "homepage": "https://github.com/davisjam/vuln-regex-detector#readme",
+  "devDependencies": {
+    "eslint-plugin-mocha": "^5.0.0"
+  }
+}

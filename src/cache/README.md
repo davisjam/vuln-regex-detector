@@ -70,6 +70,14 @@ Note:
 If you want to set up your own cache:
 1. Set up `server/cache-server.js` to run forever.
 2. Configure `server/validate-uploads.js` as a flock-guarded cron job.
+
+Here's a sample crontab entry:
+
+```bash
+* * * * * jamie PATH=$NODE_BIN:$PATH VULN_REGEX_DETECTOR_ROOT=$VULN_REGEX_DETECTOR_ROOT /usr/bin/flock -w 0 /tmp/VULN_REGEX_DETECTOR-server.lock $NODE_BIN/node $VULN_REGEX_DETECTOR_ROOT/src/cache/server/cache-server.js >> /tmp/VULN_REGEX_DETECTOR-server.log 2>&1
+* * * * * jamie PATH=$NODE_BIN:$PATH VULN_REGEX_DETECTOR_ROOT=$VULN_REGEX_DETECTOR_ROOT /usr/bin/flock -w 0 /tmp/VULN_REGEX_DETECTOR-validate.lock $NODE_BIN/node $VULN_REGEX_DETECTOR_ROOT/src/cache/server/validate-uploads.js >> /tmp/VULN_REGEX_DETECTOR-validate.log 2>&1
+```
+
 3. Tweak `.config.json` with your server and DB details.
 
 ## Default
