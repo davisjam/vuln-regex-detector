@@ -166,8 +166,9 @@ else {
 
         # Does this evilInput trigger catastrophic backtracking?
         $validateVulnQuery->{evilInput} = $evilInput;
-        &log("Validating evilInput: " . encode_json($evilInput));
-        &writeToFile("file"=>$tmpFile, "contents"=>encode_json($validateVulnQuery));
+        my $queryString = encode_json($validateVulnQuery);
+        &log("Validating evilInput with query: $queryString");
+        &writeToFile("file"=>$tmpFile, "contents"=>$queryString);
         my $report = decode_json(&chkcmd("$validateVuln $tmpFile 2>>$progressFile"));
         if ($report->{timedOut}) {
           &log("evilInput worked: triggered a timeout");
@@ -206,7 +207,7 @@ sub queryCache {
     "result"   => $PATTERN_UNKNOWN,
   };
 
-  my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cli/cache-client.js";
+  my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cache-client.js";
   if (not -f $cacheClient) {
     &log("queryCache: Could not find client $cacheClient");
     return $unknownResponse;
