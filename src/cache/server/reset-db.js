@@ -19,10 +19,9 @@ if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
 // config is determined by (1) VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE, or (2) location in dir tree.
 let configFile;
 if (process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE) {
-  configFile = process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE;
-}
-else {
-  configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
+	configFile = process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE;
+} else {
+	configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
 }
 const config = JSON.parse(fs.readFileSync(configFile));
 
@@ -35,36 +34,40 @@ const dbUploadCollectionName = config.serverConfig.dbConfig.dbUploadCollection;
 // Connect to DB.
 log(`Connecting to DB ${dbUrl}`);
 MongoClient.connect(dbUrl)
-.then((client) => {
-	log(`Connected`);
-	// Get collection.
-	const db = client.db(dbName);
+	.then((client) => {
+		log(`Connected`);
+		// Get collection.
+		const db = client.db(dbName);
 
-	const uploadCollection = db.collection(dbUploadCollectionName);
-	const lookupCollection = db.collection(dbLookupCollectionName);
+		const uploadCollection = db.collection(dbUploadCollectionName);
+		const lookupCollection = db.collection(dbLookupCollectionName);
 
-	return uploadCollection.drop()
-	.then((result) => {
-		log(`Deleted uploadCollection`);
-		return lookupCollection.drop()
-		.then((result) => {
-			log(`Deleted lookupCollection`);
-			return client.close();
-		});
+		return uploadCollection.drop()
+			.then((result) => {
+				log(`Deleted uploadCollection`);
+				return lookupCollection.drop()
+					.then((result) => {
+						log(`Deleted lookupCollection`);
+						return client.close();
+					});
+			})
+			.catch((e) => {
+				log(`Delete error: ${JSON.stringify(e)}`);
+				return client.close();
+			});
 	})
 	.catch((e) => {
-		log(`Delete error: ${JSON.stringify(e)}`);
-		return client.close();
+		log(`db error: ${e}`);
+		return Promise.resolve(false);
 	});
 
-})
-.catch((e) => {
-	log(`db error: ${e}`);
-	return Promise.resolve(false);
-});
+/* Helpers. */
 
-//////////////////////////////////////
-
-function log(msg) {
+function log (msg) {
 	console.error(new Date().toISOString() + `: ${msg}`);
+}
+
+function die (msg) {
+	log(msg);
+	process.exit(1);
 }
