@@ -31,7 +31,15 @@ const MongoClient   = require('mongodb').MongoClient;
 if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
 	die(`Error, you must define VULN_REGEX_DETECTOR_ROOT`);
 }
-const configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
+
+// config is determined by (1) VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE, or (2) location in dir tree.
+let configFile;
+if (process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE) {
+  configFile = process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE;
+}
+else {
+  configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
+}
 const config = JSON.parse(fs.readFileSync(configFile));
 
 // DB info -- convenient shorthand.
