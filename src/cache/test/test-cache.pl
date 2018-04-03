@@ -86,7 +86,7 @@ sub getTestCases {
     "(b+)+\$", # Star height
     "(\\d|\\w)+\$", # QOD
     # POLY
-    ".*foo.*bar.*baz.*qux\$", # QOA
+    ".*a.*a.*a.*a\$", # QOA
   );
 
   my @safePatterns = (

@@ -85,7 +85,7 @@ describe('vulnRegexDetector', () => {
 		});
 
 		it('should label vulnerable as such: QOA', () => {
-			return vulnRegexDetector.test(/.*foo.*bar.*baz.*qux.*$/)
+			return vulnRegexDetector.test(/.*a.*a.*a.*a$/)
 				.then(assertIsVulnerableOrUnknown, assertIsVulnerableOrUnknown);
 		});
 	});
