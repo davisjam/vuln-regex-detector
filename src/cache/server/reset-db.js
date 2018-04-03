@@ -2,7 +2,7 @@
 /**
  * Wipe the DB trusted/untrusted tables.
  * Useful if they have been corrupted by faulty cache-server.js or validate-uploads.js implementations.
- * ONLY USE DURING TESTING.
+ * NOTE: Only use in testing. Running this will throw away a lot of computation in production.
  */
 
 'use strict';
@@ -43,10 +43,10 @@ MongoClient.connect(dbUrl)
 	const uploadCollection = db.collection(dbUploadCollectionName);
 	const lookupCollection = db.collection(dbLookupCollectionName);
 
-	uploadCollection.drop()
+	return uploadCollection.drop()
 	.then((result) => {
 		log(`Deleted uploadCollection`);
-		lookupCollection.drop()
+		return lookupCollection.drop()
 		.then((result) => {
 			log(`Deleted lookupCollection`);
 			return client.close();
