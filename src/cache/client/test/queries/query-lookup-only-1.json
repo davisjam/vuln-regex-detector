@@ -1,1 +1,1 @@
-{"pattern":"d(a+)+$","language":"javascript","requestType":"LOOKUP_ONLY"}
+{"pattern":"^(.+)[ \\t]*\\n=+[ \\t]*\\n+","language":"javascript","requestType":"LOOKUP_ONLY"}

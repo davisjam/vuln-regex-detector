@@ -31,7 +31,15 @@ const MongoClient   = require('mongodb').MongoClient;
 if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
 	die(`Error, you must define VULN_REGEX_DETECTOR_ROOT`);
 }
-const configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
+
+// config is determined by (1) VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE, or (2) location in dir tree.
+let configFile;
+if (process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE) {
+  configFile = process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE;
+}
+else {
+  configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
+}
 const config = JSON.parse(fs.readFileSync(configFile));
 
 // DB info -- convenient shorthand.
@@ -219,16 +227,17 @@ function validateVuln(doc) {
 function determineSafety(doc) {
 	log(`determineSafety: doc ${JSON.stringify(doc)}`);
 
-  const tmpFile = `/tmp/validate-uploads-${process.pid}.json`;
+	const tmpFile = `/tmp/validate-uploads-${process.pid}.json`;
 	try {
-    const checkRegexQuery = {
+		const checkRegexQuery = {
 			pattern: doc.pattern,
 			validateVuln_language: doc.language,
 			validateVuln_nPumps: 250000,
 			validateVuln_timeLimit: 1,
 			useCache: 0, // Using the cache would be somewhat circular.
 		};
-    fs.writeFileSync(tmpFile, JSON.stringify(checkRegexQuery));
+		log(`checkRegex query: ${JSON.stringify(checkRegexQuery)}`);
+		fs.writeFileSync(tmpFile, JSON.stringify(checkRegexQuery));
 
 		const cmd = `${process.env.VULN_REGEX_DETECTOR_ROOT}/bin/check-regex.pl ${tmpFile} 2>/dev/null`;
 		log(cmd);
@@ -245,17 +254,17 @@ function determineSafety(doc) {
 				evilInput: result.validateReport.evilInput
 			};
 		}
-    else {
+		else {
 			// Detectors timed out or said it was safe.
 			// NB This permits false 'SAFE' reports into the database.
-      log(`Not vulnerable (or analysis timed out).`);
-      return {
-        _id: doc._id,
-        pattern: doc.pattern,
-        language: doc.language,
-        result: PATTERN_SAFE
-      };
-    }
+			log(`Not vulnerable (or analysis timed out).`);
+			return {
+				_id: doc._id,
+				pattern: doc.pattern,
+				language: doc.language,
+				result: PATTERN_SAFE
+			};
+		}
 	} catch (e) {
 		log(`Error: ${JSON.stringify(e)}`);
 		return undefined;
