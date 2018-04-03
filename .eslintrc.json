@@ -1,0 +1,9 @@
+{
+    "extends": "standard",
+		"rules": {
+			"no-multi-spaces": 0,
+			"semi": [2, "always"],
+			"indent": ["error", "tab"],
+			"no-tabs": 0
+		}
+}

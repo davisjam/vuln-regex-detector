@@ -5,13 +5,10 @@
 
 // Globals.
 const PATTERN_VULNERABLE = 'VULNERABLE';
-const PATTERN_SAFE       = 'SAFE';
-const PATTERN_UNKNOWN    = 'UNKNOWN';
-const PATTERN_INVALID    = 'INVALID';
 
-const REQUEST_LOOKUP      = "LOOKUP";
-const REQUEST_LOOKUP_ONLY = "LOOKUP_ONLY"; // Will only make a lookup, won't be submitting an UPDATE later.
-const REQUEST_UPDATE      = "UPDATE";
+const REQUEST_LOOKUP      = 'LOOKUP';
+const REQUEST_LOOKUP_ONLY = 'LOOKUP_ONLY'; // Will only make a lookup, won't be submitting an UPDATE later.
+const REQUEST_UPDATE      = 'UPDATE';
 
 const REQUEST_TYPE_TO_PATH = {};
 REQUEST_TYPE_TO_PATH[REQUEST_LOOKUP]      = '/api/lookup';
@@ -30,10 +27,9 @@ if (!process.env.VULN_REGEX_DETECTOR_ROOT) {
 // config is determined by (1) VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE, or (2) location in dir tree.
 let configFile;
 if (process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE) {
-  configFile = process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE;
-}
-else {
-  configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
+	configFile = process.env.VULN_REGEX_DETECTOR_CACHE_CONFIG_FILE;
+} else {
+	configFile = `${process.env.VULN_REGEX_DETECTOR_ROOT}/src/cache/.config.json`;
 }
 const config = JSON.parse(fs.readFileSync(configFile));
 
@@ -42,7 +38,7 @@ if (!config.clientConfig.useCache) {
 }
 
 // Args.
-if (process.argv.length != 3) {
+if (process.argv.length !== 3) {
 	console.error(`Usage: ${process.argv[1]} queryFile`);
 	process.exit(1);
 }
@@ -74,14 +70,14 @@ if (query.requestType === REQUEST_UPDATE) {
 // Prep request.
 const postData = JSON.stringify(query);
 const postOptions = {
-  hostname: config.clientConfig.cacheServer,
-  port: config.clientConfig.cachePort,
-  path: REQUEST_TYPE_TO_PATH[query.requestType],
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Content-Length': Buffer.byteLength(postData),
-  },
+	hostname: config.clientConfig.cacheServer,
+	port: config.clientConfig.cachePort,
+	path: REQUEST_TYPE_TO_PATH[query.requestType],
+	method: 'POST',
+	headers: {
+		'Content-Type': 'application/json',
+		'Content-Length': Buffer.byteLength(postData)
+	}
 };
 
 log(`postOptions:\n${JSON.stringify(postOptions)}`);
@@ -101,14 +97,14 @@ const req = https.request(postOptions, (res) => {
 
 	res.on('end', () => {
 		log(`No more data in response:\n${response}`);
-		const fullResponse = JSON.parse(response);		
+		const fullResponse = JSON.parse(response);
 		query.result = fullResponse.result;
 		console.log(JSON.stringify(query));
 	});
 });
 
 req.on('error', (e) => {
-  die(`Error, problem with request: ${e.message}`);
+	die(`Error, problem with request: ${e.message}`);
 });
 
 // Write data to request body.
@@ -116,13 +112,13 @@ log(`Writing to req:\n${postData}`);
 req.write(postData);
 req.end();
 
-/////////////////////
+/* Helpers. */
 
-function die(msg) {
+function die (msg) {
 	log(msg);
 	process.exit(1);
 }
 
-function log(msg) {
+function log (msg) {
 	console.error(new Date().toISOString() + `: ${msg}`);
 }

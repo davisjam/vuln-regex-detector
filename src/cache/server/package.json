@@ -5,7 +5,7 @@
   "main": "cache-server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint src/js"
+    "lint": "eslint cache-server.js validate-uploads.js reset-db.js"
   },
   "author": "Jamie Davis",
   "license": "MIT",
@@ -16,6 +16,11 @@
     "mongodb": "^3.0.5"
   },
   "devDependencies": {
-    "eslint": "^4.19.1"
+    "eslint": "^4.19.1",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.10.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.7.0",
+    "eslint-plugin-standard": "^3.0.1"
   }
 }
