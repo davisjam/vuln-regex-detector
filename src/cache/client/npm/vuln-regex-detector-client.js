@@ -22,6 +22,8 @@ const LOGGING = true;
  * @regex: RegExp or string (e.g. /re/ or 're')
  * @config: object with fields: hostname port
  *   default: 'toybox.cs.vt.edu', '8000'
+ *
+ * returns a Promise fulfilled with a response or rejected with RESPONSE_INVALID or an error.
  */
 function checkRegex (regex, config) {
 	let _pattern;
