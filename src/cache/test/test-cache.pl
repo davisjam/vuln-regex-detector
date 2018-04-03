@@ -25,7 +25,7 @@ if (not defined $ENV{VULN_REGEX_DETECTOR_ROOT}) {
   die "Error, VULN_REGEX_DETECTOR_ROOT must be defined\n";
 }
 
-my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cache-client.js";
+my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cli/cache-client.js";
 my $cacheServer = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/server/cache-server.js";
 my $validateUploads = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/server/validate-uploads.js";
 my $resetDB = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/server/reset-db.js";

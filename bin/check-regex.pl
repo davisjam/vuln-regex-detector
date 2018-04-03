@@ -206,7 +206,7 @@ sub queryCache {
     "result"   => $PATTERN_UNKNOWN,
   };
 
-  my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cache-client.js";
+  my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cli/cache-client.js";
   if (not -f $cacheClient) {
     &log("queryCache: Could not find client $cacheClient");
     return $unknownResponse;
