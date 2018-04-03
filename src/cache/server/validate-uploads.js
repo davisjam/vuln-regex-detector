@@ -23,7 +23,7 @@ const PATTERN_UNKNOWN    = 'UNKNOWN';
 
 // Modules.
 const fs            = require('fs');
-const childProcess = require('childProcess');
+const childProcess = require('child_process');
 const MongoClient   = require('mongodb').MongoClient;
 
 // Config.
