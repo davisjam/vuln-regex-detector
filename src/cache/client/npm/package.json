@@ -1,15 +1,16 @@
 {
   "name": "vuln-regex-detector",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Detect vulnerable regexes by querying a service hosted at Virginia Tech.",
   "main": "vuln-regex-detector-client.js",
   "directories": {
     "test": "test"
   },
   "dependencies": {
+    "sync-request": "^6.0.0"
   },
   "scripts": {
-    "test": "mocha",
+    "test": "npm run lint && mocha",
     "lint": "eslint vuln-regex-detector-client.js test/*"
   },
   "repository": {
