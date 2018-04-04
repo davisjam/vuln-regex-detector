@@ -46,8 +46,6 @@ function checkRegex (regex, config) {
 	let postBuffer = JSON.stringify(postObject);
 	let postHeaders = generatePostHeaders(_config, Buffer.byteLength(postBuffer));
 
-	process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // TODO. This affects global state.
-
 	// Wrapper so we can return a Promise.
 	function promiseResult (options, data) {
 		log(`promiseResult: data ${data}`);
@@ -131,9 +129,8 @@ function checkRegexSync (regex, config) {
 	let postHeaders = generatePostHeaders(_config, Buffer.byteLength(postBuffer));
 	let url = `https://${postHeaders.hostname}:${postHeaders.port}${postHeaders.path}`;
 
-	process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // TODO. This affects global state.
-
 	try {
+		log(`sending syncRequest: url ${url}`);
 		const response = syncRequest(postHeaders.method, url, {
 			headers: postHeaders,
 			body: postBuffer
@@ -145,6 +142,7 @@ function checkRegexSync (regex, config) {
 
 		return result;
 	} catch (e) {
+		log(`syncRequest threw: ${JSON.stringify(e)}`);
 		return RESPONSE_INVALID;
 	}
 }
