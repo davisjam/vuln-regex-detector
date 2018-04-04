@@ -56,14 +56,15 @@ If rejected, the returned Promise might be:
 
 This module queries a server hosted at Virginia Tech.
 When you use it, your regex will be shipped (via HTTPS) to the server and tested there.
+
 If the regex has not been seen before, the server will respond "UNKNOWN" and test it in the background.
 The server cannot test synchronously because testing is expensive (potentially minutes) and there might be a long line.
 
 ## Privacy
 
 By using this module you are consenting to send us your regexes.
-If your code is not open-source then you can host your own service.
-See [here](https://github.com/davisjam/vuln-regex-detector) for details, and provide your config when you call the API.
+If your code is not open-source then feel free to host your own service.
+See [here](https://github.com/davisjam/vuln-regex-detector) for details, and specify your service's hostname and port in `config` when you call the API.
 
 We may:
 - store them
@@ -71,6 +72,17 @@ We may:
 - release the regexes as a public dataset for future researchers
 
 The IP address of any client querying our server will be anonymized.
+
+# Related projects
+
+1. https://github.com/olivo/redos-detector
+2. https://github.com/substack/safe-regex
+3. https://github.com/google/re2
+
+## How is this module different from safe-regex?
+
+1. This module guarantees *no false positives*. If it reports a vulnerable regex, then there is an attack string that produces catastrophic backtracking in JavaScript (Node.js). If you're curious, you can obtain this attack string by using the `check-regex.pl` tool in [this repo](https://github.com/davisjam/vuln-regex-detector).
+2. This module guarantees *far fewer false negatives*. `safe-regex` uses a heuristic called star height which will miss a lot of regexes that are actually dangerous. `safe-regex` misses about 90% of vulnerabilities by my estimate.
 
 # License
 
