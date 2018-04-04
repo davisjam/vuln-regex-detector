@@ -9,7 +9,7 @@
   "dependencies": {
   },
   "scripts": {
-    "test": "mocha",
+    "test": "npm run lint && mocha",
     "lint": "eslint vuln-regex-detector-client.js test/*"
   },
   "repository": {
