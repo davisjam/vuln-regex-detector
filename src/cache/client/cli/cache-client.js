@@ -83,7 +83,6 @@ const postOptions = {
 log(`postOptions:\n${JSON.stringify(postOptions)}`);
 log(`${query.requestType} ${JSON.stringify(REQUEST_TYPE_TO_PATH)}`);
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // self-signed, baby
 const req = https.request(postOptions, (res) => {
 	log(`STATUS: ${res.statusCode}`);
 	log(`HEADERS: ${JSON.stringify(res.headers)}`);

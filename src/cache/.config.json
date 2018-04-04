@@ -8,8 +8,8 @@
 	"serverConfig": {
 		"serverPort": 8000,
 		"serverCredentials": {
-			"key": "VULN_REGEX_DETECTOR_ROOT/src/cache/server/keys/key.pem",
-			"cert": "VULN_REGEX_DETECTOR_ROOT/src/cache/server/keys/cert.pem"
+			"key": "VULN_REGEX_DETECTOR_ROOT/src/cache/server/keys/privkey.pem",
+			"cert": "VULN_REGEX_DETECTOR_ROOT/src/cache/server/keys/fullchain.pem"
 		},
 		"dbConfig": {
 			"dbServer": "127.0.0.1",
