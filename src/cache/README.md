@@ -96,5 +96,5 @@ Edit `.config.json`: set the `useCache` field to `0`.
 Hit it with curl:
 
 ```
-curl -d '{"pattern":"(a+)+$","language":"javascript","requestType":"LOOKUP"}' -H 'Content-Type: application/json' -X POST https://toybox.cs.vt.edu:8000/api/lookup -k --verbose
+curl -d '{"pattern":"(a+)+$","language":"javascript","requestType":"LOOKUP_ONLY"}' -H 'Content-Type: application/json' -X POST https://toybox.cs.vt.edu:8000/api/lookup -k --verbose
 ```

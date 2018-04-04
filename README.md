@@ -5,9 +5,18 @@ These are regexes that could lead to [catastrophic backtracking](https://www.reg
 
 # Getting started
 
+## Local queries
+
 1. Set the environment variable `VULN_REGEX_DETECTOR_ROOT` to wherever you cloned the repo.
 2. Run the `configure` script to install dependencies and build the detectors.
 3. Use the scripts in `bin`. See their [README](https://github.com/davisjam/vuln-regex-detector/blob/master/bin/README.md) for details.
+
+## Remote queries
+
+If you don't want to install and run the detectors locally, you can use the [vuln-regex-detector npm module](https://www.npmjs.com/package/vuln-regex-detector).
+This module queries a server hosted at Virginia Tech running the `src/cache/server` code.
+
+See [the corresponding README](https://github.com/davisjam/vuln-regex-detector/tree/master/src/cache) for more details.
 
 # How it works
 
