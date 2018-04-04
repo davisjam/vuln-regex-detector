@@ -9,6 +9,7 @@ use strict;
 use warnings;
 
 use JSON::PP;
+use Net::Domain qw(hostfqdn);
 
 # Globals
 my $PATTERN_VULNERABLE = 'VULNERABLE';
@@ -353,7 +354,8 @@ sub getCacheConfigFileForTesting {
   my $cacheConfig = decode_json(&readFile("file"=>$cacheConfigFile));
 
   # Edit for testing.
-  $cacheConfig->{clientConfig}->{cacheServer} = "127.0.0.1";
+  my $host = hostfqdn;
+  $cacheConfig->{clientConfig}->{cacheServer} = $host; # For letsencrypt cert, use DNS name.
   $cacheConfig->{serverConfig}->{dbConfig}->{dbServer} = "127.0.0.1";
 
   # Put in tmp file.
