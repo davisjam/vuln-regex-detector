@@ -26,7 +26,7 @@ vulnRegexDetector.test('(a+)+$')
 # API
 
 The module exports:
-- a function `test`
+- functions `test` and `testSync`
 - a set of responses `responses`
 
 ## test
@@ -37,19 +37,34 @@ The module exports:
  * @config: object with fields: hostname port
  *   default: 'toybox.cs.vt.edu', '8000'
  *
- * returns a Promise fulfilled with a response or rejected with RESPONSE_INVALID or an error.
+ * returns a Promise fulfilled with a vulnerable/safe/unknown or rejected with invalid.
  */
 vulnRegexDetector.test (regex, config)
 ```
 
+## testSync
+
+```javascript
+/**
+ * @regex: RegExp or string (e.g. /re/ or 're')
+ * @config: object with fields: hostname port
+ *   default: 'toybox.cs.vt.edu', '8000'
+ *
+ * returns with vulnerable/safe/unknown/invalid.
+ */
+vulnRegexDetector.testSync (regex, config)
+```
+
+NB: This API makes synchronous HTTP queries, which can be slow. You should probably not use it.
+
 ## responses
 
-If fulfilled, the returned Promise takes on one of the following values:
+If fulfilled, the returned Promise gets one of the following values:
 - `responses.vulnerable`
 - `responses.safe`
 - `responses.unknown`
 
-If rejected, the returned Promise might be:
+If rejected, the returned Promise gets the value:
 - `responses.invalid`
 
 # Implementation
@@ -57,8 +72,10 @@ If rejected, the returned Promise might be:
 This module queries a server hosted at Virginia Tech.
 When you use it, your regex will be shipped (via HTTPS) to the server and tested there.
 
-If the regex has not been seen before, the server will respond "UNKNOWN" and test it in the background.
+If the regex has not been seen before, the server will respond "unknown" and test it in the background.
 The server cannot test synchronously because testing is expensive (potentially minutes) and there might be a long line.
+
+If the server has not seen the regex before, it should have an answer if you query it again in a few minutes.
 
 ## Privacy
 
