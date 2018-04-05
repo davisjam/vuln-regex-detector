@@ -2,6 +2,15 @@
 
 ## v1.1
 
+### v1.1.1
+
+*Additions*
+
+- Update README
+
+Contributors:
+- [Jamie Davis](davisjam@vt.edu)
+
 ### v1.1.0
 
 *Additions*
