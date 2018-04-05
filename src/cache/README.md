@@ -9,61 +9,19 @@ So if two projects use the same regex, this regex can be checked once and the re
 
 # Interacting with the cache
 
-- The server side is `server/cache-server.js`. It accepts POST queries to `/api/lookup` and `/api/update`.
-- The client side is `client/cache-client.js`.
-
-## Generous client
-
-If you do not disable the cache, `check-regex.pl` interacts with the cache in two ways:
-
-1. Before `detect-vuln.pl` queries the detectors, it first queries our server. If no hit, the detectors are queried locally.
-2. After a local detector query, `detect-vuln.pl` sends the result to our server to accelerate subsequent queries (thank you!).
-
-It uses `client/cache-client.js` to make these queries.
-
-## Lazy client
-
-You might want to use a cache-only configuration.
-This way your client would not use the detectors itself, but would instead rely exclusively on the cache.
-If the cache has the regex, great!
-Otherwise, say "UNKNOWN" rather than paying the cost of the detectors locally.
-
-One place to use this configuration is in a linter, where performance is more important than accuracy.
-
-With a lazy client, use the `LOOKUP\_ONLY` mode of `client/cache-client.js`.
-This tells the server that no subsequent result will be coming from the client.
-Then server will answer the query in the background and eventually update its table for future lookups on the same regex.
-
-# Consent and privacy
-
-By enabling this service, you will be consenting to send vulnerability queries to our server.
-Each query contains the following data:
-1. The regex.
-2. The programming language (since vulnerabilities vary by language).
-
-Obviously we will also get metadata like:
-1. Your IP address.
-2. The current time.
-
-Queries are sent using HTTPS so only you and we will know about them.
-
-## Storage
-
-We will save your anonymized queries to accelerate future lookups (yours and anyone else who also queries these regexes).
-
-## Possible uses of your queries
-
-1. We may analyze queries in aggregate to learn how our tools are being adopted and how regexes are being used in practice.
-2. We may release the anonymized queries (no IP address) to facilitate future research, e.g. in the form of a giant database of the regexes used by practitioners.
+- The server side is `server/cache-server.js`. Its API is defined [here](https://github.com/davisjam/vuln-regex-detector/blob/master/src/cache/server/README.md).
+- The client sides are in `client/`: `cli/`, `npm/`, and `eslint/`.
+	- `cli/`: Used internally via `check-regex.pl`
+	- `npm/`: Source for the npm module [vuln-regex-detector](https://www.npmjs.com/package/vuln-regex-detector)
+	- `eslint/`: Source for the eslint plugin (npm module) [eslint-plugin-vuln-regex-detector](https://www.npmjs.com/package/eslint-plugin-vuln-regex-detector)
 
 # Configuration
 
 The cache configuration is stored here: `$VULN_REGEX_DETECTOR_ROOT/src/cache/.config.json`.
 All parameters are included.
+This used by the server as well as the client CLI.
 
-Note:
-- The anonymity parameter is not implemented, open an issue if you want it.
-- However, I haven't implemented any query tracking either.
+Note: The anonymity parameter is not implemented, open an issue if you want it.
 
 ## Setting up your own cache
 
@@ -79,6 +37,7 @@ Here's a sample crontab entry:
 ```
 
 3. Tweak `.config.json` with your server and DB details.
+4. The server accepts HTTPS connections. See [here](https://certbot.eff.org/) and [here](https://startupnextdoor.com/how-to-obtain-and-renew-ssl-certs-with-lets-encrypt-on-node-js/) for advice. Store your key and cert in `VULN_REGEX_DETECTOR_ROOT/src/cache/server/keys/`: `privkey.pem` and `fullchain.pem`.
 
 ## Default
 
@@ -86,15 +45,3 @@ This is the default cache configuration:
 - The cache is enabled.
 - It queries our server.
 - You give us permission to disclose your anonymized queries.
-
-# Disabling the cache
-
-Edit `.config.json`: set the `useCache` field to `0`.
-
-# Debugging the cache
-
-Hit it with curl:
-
-```
-curl -d '{"pattern":"(a+)+$","language":"javascript","requestType":"LOOKUP_ONLY"}' -H 'Content-Type: application/json' -X POST https://toybox.cs.vt.edu:8000/api/lookup -k --verbose
-```
