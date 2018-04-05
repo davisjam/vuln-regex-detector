@@ -36,16 +36,11 @@ Then configure the rules you want to use under the rules section.
 ```json
 {
     "rules": {
-        "vuln-regex-detector/rule-name": 2
+        "vuln-regex-detector/no-vuln-regex": 2
     }
 }
 ```
 
 ## Supported Rules
 
-* Fill in provided rules here
-
-
-
-
-
+- `no-vuln-regex`: Identify vulnerable regexes in your code.
