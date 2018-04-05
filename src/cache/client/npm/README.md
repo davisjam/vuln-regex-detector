@@ -79,6 +79,10 @@ If the server has not seen the regex before, it should have an answer if you que
 
 If you cannot connect to the server or your query is malformed, you'll get the answer "invalid".
 
+## Optimizations
+
+This module maintains a persistent local cache stored in `os.tmpdir()` to reduce the number of HTTP queries.
+
 ## Privacy
 
 By using this module you are consenting to send us your regexes.
