@@ -1,5 +1,16 @@
 # v1
 
+## v1.2
+
+### v1.2.0
+
+*Additions*
+
+- Add a persistent local cache. This is now the default.
+
+Contributors:
+- [Jamie Davis](davisjam@vt.edu)
+
 ## v1.1
 
 ### v1.1.1
