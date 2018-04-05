@@ -18,6 +18,7 @@ const DEFAULT_CONFIG = {
 };
 
 const LOGGING = false;
+const USE_CACHE = true;
 
 /* Map pattern to RESPONSE_VULNERABLE or RESPONSE_SAFE in case of duplicate queries.
  * We do not cache RESPONSE_UNKNOWN or RESPONSE_INVALID responses since these might change. */
@@ -50,11 +51,13 @@ function checkRegex (regex, config) {
 	function promiseResult (options, data) {
 		log(`promiseResult: data ${data}`);
 		return new Promise((resolve, reject) => {
-			/* Check cache to avoid I/O. */
-			const cacheHit = checkCache(_pattern);
-			if (cacheHit !== RESPONSE_UNKNOWN) {
-				log(`Cache hit: ${cacheHit}`);
-				return resolve(cacheHit);
+			if (USE_CACHE) {
+				/* Check cache to avoid I/O. */
+				const cacheHit = checkCache(_pattern);
+				if (cacheHit !== RESPONSE_UNKNOWN) {
+					log(`Cache hit: ${cacheHit}`);
+					return resolve(cacheHit);
+				}
 			}
 
 			const req = https.request(options, (res) => {
@@ -67,11 +70,13 @@ function checkRegex (regex, config) {
 				});
 
 				res.on('end', () => {
-					log(`end: I got ${response}`);
+					log(`end: I got ${JSON.stringify(response)}`);
 
 					const result = serverResponseToRESPONSE(response);
 					log(`end: result ${result}`);
-					updateCache(postObject.pattern, result);
+					if (USE_CACHE) {
+						updateCache(postObject.pattern, result);
+					}
 
 					if (result === RESPONSE_INVALID) {
 						return reject(result);
@@ -117,11 +122,13 @@ function checkRegexSync (regex, config) {
 	}
 	log(`Input OK. _pattern /${_pattern}/ _config ${JSON.stringify(_config)}`);
 
-	/* Check cache to avoid I/O. */
-	const cacheHit = checkCache(_pattern);
-	if (cacheHit !== RESPONSE_UNKNOWN) {
-		log(`Cache hit: ${cacheHit}`);
-		return cacheHit;
+	if (USE_CACHE) {
+		/* Check cache to avoid I/O. */
+		const cacheHit = checkCache(_pattern);
+		if (cacheHit !== RESPONSE_UNKNOWN) {
+			log(`Cache hit: ${cacheHit}`);
+			return cacheHit;
+		}
 	}
 
 	let postObject = generatePostObject(_pattern);
@@ -130,15 +137,29 @@ function checkRegexSync (regex, config) {
 	let url = `https://${postHeaders.hostname}:${postHeaders.port}${postHeaders.path}`;
 
 	try {
-		log(`sending syncRequest: url ${url}`);
+		log(`sending syncRequest: method ${postHeaders.method} url ${url} headers ${JSON.stringify(postHeaders.headers)} body ${postBuffer}`);
+
+		/* Send request. */
 		const response = syncRequest(postHeaders.method, url, {
-			headers: postHeaders,
+			headers: postHeaders.headers,
 			body: postBuffer
 		});
 
-		log(`end: I got ${response}`);
-		const result = serverResponseToRESPONSE(response);
-		updateCache(postObject.pattern, result);
+		/* Extract body as JSON. */
+		let responseBody;
+		try {
+			responseBody = response.getBody('utf8');
+		} catch (e) {
+			log(`checkRegexSync: Unparseable response ${JSON.stringify(response)}`);
+			return RESPONSE_INVALID;
+		}
+		log(`checkRegexSync: I got ${responseBody}`);
+
+		/* Convert to a RESPONSE_X value. */
+		const result = serverResponseToRESPONSE(responseBody);
+		if (USE_CACHE) {
+			updateCache(postObject.pattern, result);
+		}
 
 		return result;
 	} catch (e) {
@@ -235,6 +256,10 @@ function serverResponseToRESPONSE (response) {
  **********/
 
 function updateCache (pattern, response) {
+	if (!USE_CACHE) {
+		return;
+	}
+
 	/* Only cache VULNERABLE|SAFE responses. */
 	if (response !== RESPONSE_VULNERABLE && response !== RESPONSE_SAFE) {
 		return;
@@ -247,6 +272,10 @@ function updateCache (pattern, response) {
 
 /* Returns RESPONSE_{VULNERABLE|SAFE} on hit, else RESPONSE_UNKNOWN. */
 function checkCache (pattern) {
+	if (!USE_CACHE) {
+		return RESPONSE_UNKNOWN;
+	}
+
 	const hit = patternCache[pattern];
 	if (hit) {
 		log(`checkCache: pattern ${pattern}: hit in patternCache\n  ${JSON.stringify(patternCache)}`);
