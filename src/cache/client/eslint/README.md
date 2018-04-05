@@ -2,6 +2,10 @@
 
 Detect unsafe regexes.
 
+This is an experimental plugin.
+It works, but it makes a synchronous HTTP request for every regex in your code.
+If you have more than a few regexes or are located far from [Virginia Tech](https://tinyurl.com/ybmqmjt2), the overhead might be intolerable.
+
 ## Installation
 
 You'll first need to install [ESLint](http://eslint.org):
