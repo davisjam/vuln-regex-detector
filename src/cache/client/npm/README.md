@@ -67,7 +67,7 @@ If fulfilled, the returned Promise gets one of the following values:
 If rejected, the returned Promise gets the value:
 - `responses.invalid`
 
-# Implementation
+# Implementation details
 
 This module queries a server hosted at Virginia Tech.
 When you use it, your regex will be shipped (via HTTPS) to the server and tested there.
@@ -76,6 +76,8 @@ If the regex has not been seen before, the server will respond "unknown" and tes
 The server cannot test synchronously because testing is expensive (potentially minutes) and there might be a long line.
 
 If the server has not seen the regex before, it should have an answer if you query it again in a few minutes.
+
+If you cannot connect to the server or your query is malformed, you'll get the answer "invalid".
 
 ## Privacy
 
