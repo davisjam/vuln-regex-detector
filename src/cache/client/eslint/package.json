@@ -1,0 +1,46 @@
+{
+  "name": "eslint-plugin-vuln-regex-detector",
+  "version": "1.0.0",
+  "description": "Detect vulnerable regexes using the vuln-regex-detector module.",
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin",
+    "regex",
+    "catastrophic",
+    "backtracking",
+    "regular",
+    "expressions",
+    "safe-regex",
+    "safer-regex",
+    "REDOS"
+  ],
+  "author": "Jamie Davis (davisjam)",
+  "main": "lib/index.js",
+  "scripts": {
+    "lint": "eslint lib/* test/*",
+    "test": "npm run lint && mocha test --recursive"
+  },
+  "dependencies": {
+    "requireindex": "~1.1.0",
+    "vuln-regex-detector": "^1.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.10.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.7.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "mocha": "^5.0.5",
+    "eslint-plugin-mocha": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=8.1.0"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/davisjam/vuln-regex-detector/issues"
+  },
+  "homepage": "https://github.com/davisjam/vuln-regex-detector#readme"
+}

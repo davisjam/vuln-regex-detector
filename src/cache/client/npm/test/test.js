@@ -111,45 +111,45 @@ describe('vulnRegexDetector', () => {
 	describe('checkRegexSync', () => {
 		describe('input format', () => {
 			it('should accept regexes as strings', () => {
-				return assertIsOK(vulnRegexDetector.testSync('abc'));
+				assertIsOK(vulnRegexDetector.testSync('abc'));
 			});
 
 			it('should accept regexes as RegExps', () => {
-				return assertIsOK(vulnRegexDetector.testSync(/abc/));
+				assertIsOK(vulnRegexDetector.testSync(/abc/));
 			});
 
 			it('should reject an undefined regex', () => {
-				return assertIsInvalid(vulnRegexDetector.testSync(undefined));
+				assertIsInvalid(vulnRegexDetector.testSync(undefined));
 			});
 
 			it('should reject a random object', () => {
-				return assertIsInvalid(vulnRegexDetector.testSync({foo: 1}));
+				assertIsInvalid(vulnRegexDetector.testSync({foo: 1}));
 			});
 
 			it('should accept config', () => {
-				return assertIsOK(vulnRegexDetector.testSync('abc', { hostname: 'toybox.cs.vt.edu', port: 8000 }));
+				assertIsOK(vulnRegexDetector.testSync('abc', { hostname: 'toybox.cs.vt.edu', port: 8000 }));
 			});
 		});
 
 		describe('outcome validity', () => {
 			it('should label safe as such: simple', () => {
-				return assertIsSafeOrUnknown(vulnRegexDetector.testSync('abc'));
+				assertIsSafeOrUnknown(vulnRegexDetector.testSync('abc'));
 			});
 
 			it('should label safe as such: non-vulnerable star height', () => {
-				return assertIsSafeOrUnknown(vulnRegexDetector.testSync('(ab+)+$'));
+				assertIsSafeOrUnknown(vulnRegexDetector.testSync('(ab+)+$'));
 			});
 
 			it('should label vulnerable as such: star height', () => {
-				return assertIsVulnerableOrUnknown(vulnRegexDetector.testSync('(a+)+$'));
+				assertIsVulnerableOrUnknown(vulnRegexDetector.testSync('(a+)+$'));
 			});
 
 			it('should label vulnerable as such: QOD', () => {
-				return assertIsVulnerableOrUnknown(vulnRegexDetector.testSync(/(\d|\w)+$/));
+				assertIsVulnerableOrUnknown(vulnRegexDetector.testSync(/(\d|\w)+$/));
 			});
 
 			it('should label vulnerable as such: QOA', () => {
-				return assertIsVulnerableOrUnknown(vulnRegexDetector.testSync(/.*a.*a.*a.*a$/));
+				assertIsVulnerableOrUnknown(vulnRegexDetector.testSync(/.*a.*a.*a.*a$/));
 			});
 		});
 
