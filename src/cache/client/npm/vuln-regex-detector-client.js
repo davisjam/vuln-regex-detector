@@ -1,10 +1,25 @@
 'use strict';
 
-/* Dependencies. */
+/**********
+ * Dependencies.
+ **********/
+
+/* I/O. */
 const https = require('https');
 const syncRequest = require('sync-request');
 
-/* Globals. */
+/* Persistent cache. */
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+
+/* Misc. */
+const os = require('os');
+
+/**********
+ * Globals.
+ **********/
+
 const REQUEST_LOOKUP_ONLY = 'LOOKUP_ONLY'; // Will only make a lookup, won't be submitting an UPDATE later.
 
 const RESPONSE_VULNERABLE = 'VULNERABLE';
@@ -17,12 +32,20 @@ const DEFAULT_CONFIG = {
 	port: 8000
 };
 
+/* Logging. */
 const LOGGING = false;
-const USE_CACHE = true;
 
-/* Map pattern to RESPONSE_VULNERABLE or RESPONSE_SAFE in case of duplicate queries.
- * We do not cache RESPONSE_UNKNOWN or RESPONSE_INVALID responses since these might change. */
-let patternCache = {};
+/* Cache config. */
+const CACHE_TYPES = {
+	none: 'none',
+	memory: 'memory',
+	persistent: 'persistent'
+};
+const CACHE_TYPE = CACHE_TYPES.persistent;
+
+/**********
+ * Functions.
+ **********/
 
 /**
  * @param regex: RegExp or string (e.g. /re/ or 're')
@@ -51,13 +74,11 @@ function checkRegex (regex, config) {
 	function promiseResult (options, data) {
 		log(`promiseResult: data ${data}`);
 		return new Promise((resolve, reject) => {
-			if (USE_CACHE) {
-				/* Check cache to avoid I/O. */
-				const cacheHit = checkCache(_pattern);
-				if (cacheHit !== RESPONSE_UNKNOWN) {
-					log(`Cache hit: ${cacheHit}`);
-					return resolve(cacheHit);
-				}
+			/* Check cache to avoid I/O. */
+			const cacheHit = checkCache(_pattern);
+			if (cacheHit !== RESPONSE_UNKNOWN) {
+				log(`Cache hit: ${cacheHit}`);
+				return resolve(cacheHit);
 			}
 
 			const req = https.request(options, (res) => {
@@ -74,9 +95,7 @@ function checkRegex (regex, config) {
 
 					const result = serverResponseToRESPONSE(response);
 					log(`end: result ${result}`);
-					if (USE_CACHE) {
-						updateCache(postObject.pattern, result);
-					}
+					updateCache(postObject.pattern, result);
 
 					if (result === RESPONSE_INVALID) {
 						return reject(result);
@@ -122,13 +141,11 @@ function checkRegexSync (regex, config) {
 	}
 	log(`Input OK. _pattern /${_pattern}/ _config ${JSON.stringify(_config)}`);
 
-	if (USE_CACHE) {
-		/* Check cache to avoid I/O. */
-		const cacheHit = checkCache(_pattern);
-		if (cacheHit !== RESPONSE_UNKNOWN) {
-			log(`Cache hit: ${cacheHit}`);
-			return cacheHit;
-		}
+	/* Check cache to avoid I/O. */
+	const cacheHit = checkCache(_pattern);
+	if (cacheHit !== RESPONSE_UNKNOWN) {
+		log(`Cache hit: ${cacheHit}`);
+		return cacheHit;
 	}
 
 	let postObject = generatePostObject(_pattern);
@@ -157,9 +174,7 @@ function checkRegexSync (regex, config) {
 
 		/* Convert to a RESPONSE_X value. */
 		const result = serverResponseToRESPONSE(responseBody);
-		if (USE_CACHE) {
-			updateCache(postObject.pattern, result);
-		}
+		updateCache(postObject.pattern, result);
 
 		return result;
 	} catch (e) {
@@ -253,32 +268,171 @@ function serverResponseToRESPONSE (response) {
 
 /**********
  * Cache.
+ *
+ * The cache in use is controlled by CACHE_TYPE.
+ * If CACHE_TYPE is 'none' then APIs behave appropriately.
+ * The cache is implemented using a key-value interface.
+ *
+ * Cache accesses are synchronous.
+ * If CACHE_TYPE is 'memory' that's fine.
+ * If CACHE_TYPE is 'persistent' then there are some performance concerns.
+ * TODO Address this with sync and async versions of the APIs.
  **********/
 
-function updateCache (pattern, response) {
-	if (!USE_CACHE) {
-		return;
-	}
-
-	/* Only cache VULNERABLE|SAFE responses. */
-	if (response !== RESPONSE_VULNERABLE && response !== RESPONSE_SAFE) {
-		return;
-	}
-
-	if (!patternCache.hasOwnProperty(pattern)) {
-		patternCache[pattern] = response;
-	}
+function useCache () {
+	return CACHE_TYPE !== CACHE_TYPES.none;
 }
 
-/* Returns RESPONSE_{VULNERABLE|SAFE} on hit, else RESPONSE_UNKNOWN. */
+function updateCache (pattern, response) {
+	if (!useCache()) {
+		return;
+	}
+
+	return kvPut(pattern, response);
+}
+
+/* Returns RESPONSE_{VULNERABLE|SAFE} on hit, else RESPONSE_UNKNOWN on miss or disabled. */
 function checkCache (pattern) {
-	if (!USE_CACHE) {
+	if (!useCache()) {
 		return RESPONSE_UNKNOWN;
 	}
 
-	const hit = patternCache[pattern];
+	return kvGet(pattern);
+}
+
+function kvPut (key, value) {
+	/* Only cache VULNERABLE|SAFE responses. */
+	if (value !== RESPONSE_VULNERABLE && value !== RESPONSE_SAFE) {
+		return;
+	}
+
+	/* Put in the appropriate cache. */
+	switch (CACHE_TYPE) {
+	case CACHE_TYPES.memory:
+		return kvPutMemory(key, value);
+	case CACHE_TYPES.persistent:
+		return kvPutPersistent(key, value);
+	default:
+		return RESPONSE_UNKNOWN;
+	}
+}
+
+function kvGet (key) {
+	/* Get from the appropriate cache. */
+	switch (CACHE_TYPE) {
+	case CACHE_TYPES.memory:
+		return kvGetMemory(key);
+	case CACHE_TYPES.persistent:
+		return kvGetPersistent(key);
+	default:
+		return RESPONSE_UNKNOWN;
+	}
+}
+
+/* Persistent KV. */
+
+const PERSISTENT_CACHE_DIR = path.join(os.tmpdir(), 'vuln-regex-detector-client-persistentCache');
+log(`PERSISTENT_CACHE_DIR ${PERSISTENT_CACHE_DIR}`);
+
+let kvPersistentInitialized = false;
+let kvPersistentCouldNotInitialize = false;
+
+/* Returns true if initialized, false on initialization failure. */
+function initializeKVPersistent () {
+	/* Tried before? */
+	if (kvPersistentInitialized) {
+		return true;
+	}
+	if (kvPersistentCouldNotInitialize) {
+		return false;
+	}
+
+	/* First time through. */
+
+	/* First try a mkdir. Dir might exist already. */
+	try {
+		fs.mkdirSync(PERSISTENT_CACHE_DIR);
+	} catch (e) {
+	}
+
+	/* If we have a dir now, we're happy. */
+	try {
+		const stats = fs.lstatSync(PERSISTENT_CACHE_DIR);
+		if (stats.isDirectory()) {
+			kvPersistentInitialized = true;
+			return true;
+		} else {
+			kvPersistentCouldNotInitialize = true;
+			return false;
+		}
+	} catch (e) {
+		/* Hmm. */
+		kvPersistentCouldNotInitialize = true;
+		return false;
+	}
+}
+
+function kvPersistentFname (key) {
+	/* Need something we can safely use as a file name.
+	 * Keys are patterns and might contain /'s or \'s.
+	 *
+	 * Using a hash might give us false reports on collisions, but this is
+	 * exceedingly unlikely in typical use cases (a few hundred regexes tops). */
+	const hash = crypto.createHash('md5').update(key).digest('hex');
+	const fname = path.join(PERSISTENT_CACHE_DIR, `${hash}.json`);
+	return fname;
+}
+
+function kvPutPersistent (key, value) {
+	if (!initializeKVPersistent()) {
+		log(`kvPutPersistent: could not initialize`);
+		return;
+	}
+
+	try {
+		/* This must be atomic in case of concurrent put and get from different processes.
+		 * Hence the use of a tmp file and rename. */
+		const fname = kvPersistentFname(key);
+		const tmpFname = `${fname}-${process.pid}-tmp`;
+		log(`kvPutPersistent: putting result in ${fname}`);
+		fs.writeFileSync(tmpFname, JSON.stringify({key: key, value: value}));
+		fs.renameSync(tmpFname, fname);
+	} catch (e) {
+		/* Ignore failures. */
+	}
+}
+
+function kvGetPersistent (key) {
+	if (!initializeKVPersistent()) {
+		return RESPONSE_UNKNOWN;
+	}
+
+	try {
+		const fname = kvPersistentFname(key);
+		log(`kvGetPersistent: getting result from ${fname}`);
+		const cont = JSON.parse(fs.readFileSync(fname));
+		return cont.value;
+	} catch (e) {
+		return RESPONSE_UNKNOWN;
+	}
+}
+
+/* Memory (volatile) KV. */
+
+/* Map pattern to RESPONSE_VULNERABLE or RESPONSE_SAFE in case of duplicate queries.
+ * We do not cache RESPONSE_UNKNOWN or RESPONSE_INVALID responses since these might change. */
+let memoryPattern2response = {};
+
+function kvPutMemory (key, value) {
+	if (!memoryPattern2response.hasOwnProperty(key)) {
+		memoryPattern2response[key] = value;
+	}
+}
+
+function kvGetMemory (key) {
+	const hit = memoryPattern2response[key];
 	if (hit) {
-		log(`checkCache: pattern ${pattern}: hit in patternCache\n  ${JSON.stringify(patternCache)}`);
+		log(`kvGetMemory: hit: ${key} -> ${hit}`);
 		return hit;
 	} else {
 		return RESPONSE_UNKNOWN;
