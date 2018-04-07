@@ -1,5 +1,16 @@
 # v1
 
+## v1.3
+
+### v1.3.0
+
+*Additions*
+
+- Change config param to make the cache configurable. This is a breaking change.
+
+Contributors:
+- [Jamie Davis](davisjam@vt.edu)
+
 ## v1.2
 
 ### v1.2.0

@@ -11,7 +11,23 @@ This module lets you check a regex for vulnerability.
 ```javascript
 const vulnRegexDetector = require('vuln-regex-detector');
 
-vulnRegexDetector.test('(a+)+$')
+const regex = /(a+)+$/; // RegExp
+const pattern = regex.source; // String
+
+const cacheConfig = {
+	type: vulnRegexDetector.cacheTypes.persistent
+};
+const config = {
+	cache: cacheConfig
+};
+
+/* This runs synchronously so it's expensive.
+ * It uses a persistent cache, so subsequent queries in this process or another one
+ * can be resolved locally. */
+const result = vulnRegexDetector.testSync(regex, config);
+console.log(`I got ${result}`);
+
+vulnRegexDetector.test(pattern, config)
 	.then((result) => {
 		if (result === vulnRegexDetector.responses.vulnerable) {
 			console.log('Regex is vulnerable');
@@ -26,18 +42,32 @@ vulnRegexDetector.test('(a+)+$')
 # API
 
 The module exports:
-- functions `test` and `testSync`
-- a set of responses `responses`
+- functions `test` and `testSync` for making queries
+- macro `cacheTypes` for use specifying config.cache
+- a set of responses `responses` for interpreting results
 
 ## test
 
 ```javascript
 /**
- * @regex: RegExp or string (e.g. /re/ or 're')
- * @config: object with fields: hostname port
- *   default: 'toybox.cs.vt.edu', '8000'
+ * @param regex: RegExp or string (e.g. /re/ or 're')
+ * @param [config]: provide a config object like this:
+ *  {
+ *    server: {
+ *      hostname: 'toybox.cs.vt.edu',
+ *      port: 8000
+ *    },
+ *    cache: {
+ *      type: cacheTypes.persistent,
+ *      [persistentDir]: '/tmp/vuln-regex-detector-client-persistentCache'
+ *    }
+ *  }
  *
- * returns a Promise fulfilled with a vulnerable/safe/unknown or rejected with invalid.
+ * Config defaults if not provided:
+ *   server: indicated in the example. This is a research server at Virginia Tech.
+ *   cache: 'persistent' with persistentDir in a subdir of os.tmpdir().
+ *
+ * @returns Promise fulfilled with responses.X or rejected with responses.invalid.
  */
 vulnRegexDetector.test (regex, config)
 ```
@@ -46,16 +76,22 @@ vulnRegexDetector.test (regex, config)
 
 ```javascript
 /**
- * @regex: RegExp or string (e.g. /re/ or 're')
- * @config: object with fields: hostname port
- *   default: 'toybox.cs.vt.edu', '8000'
+ * @param regex: see checkRegex API
+ * @param [config]: see checkRegex API
  *
- * returns with vulnerable/safe/unknown/invalid.
+ * @returns synchronous result: responses.X
+ *
+ * Since this makes a synchronous HTTP query it will be slow.
  */
 vulnRegexDetector.testSync (regex, config)
 ```
 
-NB: This API makes synchronous HTTP queries, which can be slow. You should probably not use it.
+NB: This API makes synchronous HTTP queries, which can be slow. You should not use it in server software.
+On an AWS micro instance this API can be called about 200 times per minute.
+
+This API is intended for use in CI contexts where performance is less critical.
+For use in CI, see [this module](https://www.npmjs.com/package/eslint-plugin-vuln-regex-detector).
+If your application defines many regexes dynamically you might want to write your own CI stage.
 
 ## responses
 
@@ -106,6 +142,10 @@ The IP address of any client querying our server will be anonymized.
 
 1. This module guarantees *no false positives*. If it reports a vulnerable regex, then there is an attack string that produces catastrophic backtracking in JavaScript (Node.js). If you're curious, you can obtain this attack string by using the `check-regex.pl` tool in [this repo](https://github.com/davisjam/vuln-regex-detector).
 2. This module guarantees *far fewer false negatives*. `safe-regex` uses a heuristic called star height which will miss a lot of regexes that are actually dangerous. `safe-regex` misses about 90% of vulnerabilities by my estimate.
+
+# Contributing
+
+Issues and PRs welcome.
 
 # License
 
