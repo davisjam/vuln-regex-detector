@@ -5,6 +5,7 @@
 'use strict';
 
 const vulnRegexDetector = require('vuln-regex-detector');
+// const vulnRegexDetector = require('../../../npm/');
 
 // ------------------------------------------------------------------------------
 // Rule Definition
@@ -55,7 +56,28 @@ module.exports = {
 				const pattern = getRegExpPattern(node);
 
 				if (pattern) {
-					const response = vulnRegexDetector.testSync(pattern);
+					let serverConfig = vulnRegexDetector.defaultServerConfig;
+					if (process.env.ESLINT_PLUGIN_NO_VULN_REGEX_HOSTNAME && process.env.ESLINT_PLUGIN_NO_VULN_REGEX_PORT) {
+						serverConfig = {
+							hostname: process.env.ESLINT_PLUGIN_NO_VULN_REGEX_HOSTNAME,
+							port: process.env.ESLINT_PLUGIN_NO_VULN_REGEX_PORT
+						};
+					};
+
+					let cacheConfig = vulnRegexDetector.defaultCacheConfig;
+					if (process.env.ESLINT_PLUGIN_NO_VULN_REGEX_PERSISTENT_DIR) {
+						cacheConfig = {
+							type: vulnRegexDetector.cacheTypes.persistent,
+							persistentDir: process.env.ESLINT_PLUGIN_NO_VULN_REGEX_PERSISTENT_DIR
+						};
+					};
+
+					const config = {
+						server: serverConfig,
+						cache: cacheConfig
+					};
+
+					const response = vulnRegexDetector.testSync(pattern, config);
 					if (response === vulnRegexDetector.responses.vulnerable) {
 						const report = {
 							node,
@@ -65,7 +87,6 @@ module.exports = {
 							}
 						};
 						context.report(report);
-					} else {
 					}
 				}
 			}
