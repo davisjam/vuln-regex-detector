@@ -24,6 +24,18 @@ This is appropriate for use in your CI.
 You should re-use your existing eslint invocation (see the `lint` line in your `package.json` scripts).
 You might want to restrict the files you care about, since e.g. vulnerable regexes in `test/` are probably not an issue.
 
+## Configuring
+
+The vuln-regex-detector module lets users specify the server hostname and port, as well as the local cache.
+
+### Server config
+
+Invoke eslint with `ESLINT_PLUGIN_NO_VULN_REGEX_HOSTNAME=... ESLINT_PLUGIN_NO_VULN_REGEX_PORT=...`.
+
+### Cache config
+
+Invoke eslint with `ESLINT_PLUGIN_NO_VULN_REGEX_PERSISTENT_DIR=...`.
+
 ## Performance
 
 ### Cold cache

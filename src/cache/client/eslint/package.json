@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-vuln-regex-detector",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Detect vulnerable regexes using the vuln-regex-detector module.",
   "keywords": [
     "eslint",
