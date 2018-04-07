@@ -41,6 +41,7 @@
     "eslint-plugin-promise": "^3.7.0",
     "eslint-plugin-standard": "^3.0.1",
     "mocha": "^5.0.5",
-    "eslint-plugin-mocha": "^5.0.0"
+    "eslint-plugin-mocha": "^5.0.0",
+    "remove": "^0.1.5"
   }
 }

@@ -2,6 +2,10 @@
 
 const vulnRegexDetector = require('..');
 const assert = require('assert');
+const os = require('os');
+const path = require('path');
+const fs = require('fs');
+const remove = require('remove');
 
 // Outcome must be SAFE or UNKNOWN
 function assertIsSafeOrUnknown (outcome) {
@@ -55,7 +59,7 @@ describe('vulnRegexDetector', () => {
 			});
 
 			it('should accept config', () => {
-				return vulnRegexDetector.test('abc', { hostname: 'toybox.cs.vt.edu', port: 8000 })
+				return vulnRegexDetector.test('abc', { server: { hostname: vulnRegexDetector.defaultServerConfig.hostname, port: 8000 } })
 					.then(assertIsOK, assertIsOK);
 			});
 		});
@@ -89,18 +93,36 @@ describe('vulnRegexDetector', () => {
 
 		describe('invalid config', () => {
 			it('should reject an invalid host', () => {
-				return vulnRegexDetector.test('abcde', { hostname: 'no such host', port: 8000 })
+				let invalidConfig = {
+					server: {
+						hostname: 'no such host',
+						port: 1
+					},
+					cache: {
+						type: vulnRegexDetector.cacheTypes.none // Otherwise the default persistent cache will save us!
+					}
+				};
+				return vulnRegexDetector.test('abcde', invalidConfig)
 					.then((response) => {
-						assert.ok(false, `Invalid config should not have resolved (with ${response})`);
+						assert.ok(false, `Invalid config ${JSON.stringify(invalidConfig)} should not have resolved (with ${response})`);
 					}, (err) => {
 						assert.ok(err === vulnRegexDetector.responses.invalid, `Invalid config rejected, but with ${err}`);
 					});
 			});
 
 			it('should reject an invalid port', () => {
-				return vulnRegexDetector.test('abcde', { hostname: 'toybox.cs.vt.edu', port: 22 })
+				let invalidConfig = {
+					server: {
+						hostname: vulnRegexDetector.defaultServerConfig.hostname,
+						port: 22
+					},
+					cache: {
+						type: vulnRegexDetector.cacheTypes.none // Otherwise the default persistent cache will save us!
+					}
+				};
+				return vulnRegexDetector.test('abcde', invalidConfig)
 					.then((response) => {
-						assert.ok(false, `Invalid config should not have resolved (with ${response})`);
+						assert.ok(false, `Invalid config ${JSON.stringify(invalidConfig)} should not have resolved (with ${response})`);
 					}, (err) => {
 						assert.ok(err === vulnRegexDetector.responses.invalid, `Invalid config rejected, but with ${err}`);
 					});
@@ -127,7 +149,7 @@ describe('vulnRegexDetector', () => {
 			});
 
 			it('should accept config', () => {
-				assertIsOK(vulnRegexDetector.testSync('abc', { hostname: 'toybox.cs.vt.edu', port: 8000 }));
+				assertIsOK(vulnRegexDetector.testSync('abc', { server: { hostname: vulnRegexDetector.defaultServerConfig.hostname, port: 8000 } }));
 			});
 		});
 
@@ -155,22 +177,152 @@ describe('vulnRegexDetector', () => {
 
 		describe('invalid config', () => {
 			it('should reject an invalid host', () => {
-				const response = vulnRegexDetector.testSync('abcde', { hostname: 'no such host', port: 8000 });
-				assert.ok(response === vulnRegexDetector.responses.invalid, `Invalid config returned ${response}`);
+				let invalidConfig = {
+					server: {
+						hostname: 'no such host',
+						port: 1
+					},
+					cache: {
+						type: vulnRegexDetector.cacheTypes.none // Otherwise the default persistent cache will save us!
+					}
+				};
+				const response = vulnRegexDetector.testSync('abcde', invalidConfig);
+				assert.ok(response === vulnRegexDetector.responses.invalid, `Invalid config ${JSON.stringify(invalidConfig)} returned ${response}`);
 			});
 
 			it('should reject an invalid port', () => {
-				const response = vulnRegexDetector.testSync('abcde', { hostname: 'toybox.cs.vt.edu', port: 22 });
-				assert.ok(response === vulnRegexDetector.responses.invalid, `Invalid config returned ${response}`);
+				let invalidConfig = {
+					server: {
+						hostname: vulnRegexDetector.defaultServerConfig.hostname,
+						port: 22
+					},
+					cache: {
+						type: vulnRegexDetector.cacheTypes.none // Otherwise the default persistent cache will save us!
+					}
+				};
+				const response = vulnRegexDetector.testSync('abcde', invalidConfig);
+				assert.ok(response === vulnRegexDetector.responses.invalid, `Invalid config ${JSON.stringify(invalidConfig)} returned ${response}`);
 			});
 		});
 
 		describe('cache', () => {
-			it('should hit cache on successive duplicate queries', () => {
-				for (let i = 0; i < 10; i++) {
-					assertIsSafeOrUnknown(vulnRegexDetector.testSync('abc'));
-				}
+			describe('persistent', () => {
+				it('should hit cache instead of failing when config.server is invalid', () => {
+					const pattern = 'abc';
+					// Make sync query to prime local persistent cache.
+					let validConfig = { cache: { type: vulnRegexDetector.cacheTypes.persistent } };
+					const response1 = vulnRegexDetector.testSync(pattern, validConfig);
+					assert.ok(response1 === vulnRegexDetector.responses.safe, `Error, unexpected response for sync query: ${response1}`);
+
+					let invalidConfig = {
+						server: {
+							hostname: 'no such host',
+							port: 1
+						},
+						cache: {
+							type: vulnRegexDetector.cacheTypes.persistent
+						}
+					};
+					const response2 = vulnRegexDetector.testSync(pattern, invalidConfig);
+					assert.ok(response2 === vulnRegexDetector.responses.safe, `Query failed: response ${response2}, probably due to my invalid config.server (so cache failed)`);
+				});
+
+				it('honors persistentDir', () => {
+					const pattern = 'abc';
+					const persistentDir = path.join(os.tmpdir(), `vuln-regex-detector-TEST-${process.pid}`);
+					const cacheConfig = {
+						type: vulnRegexDetector.cacheTypes.persistent,
+						persistentDir: persistentDir
+					};
+
+					function persistentDirExists () {
+						try {
+							return fs.statSync(persistentDir).isDirectory();
+						} catch (e) {
+							return false;
+						}
+					}
+
+					if (persistentDirExists()) {
+						remove.removeSync(persistentDir);
+					}
+
+					// Make sync query to prime local persistent cache.
+					const response1 = vulnRegexDetector.testSync(pattern, { cache: cacheConfig });
+					assert.ok(response1 === vulnRegexDetector.responses.safe, `Error, unexpected response for sync query: ${response1}`);
+					assert.ok(persistentDirExists(), `Error, persistentDir ${persistentDir} does not exist after sync query`);
+
+					// Now an invalid config should work.
+					let invalidConfig = {
+						server: {
+							hostname: 'no such host',
+							port: 1
+						},
+						cache: cacheConfig
+					};
+					const response2 = vulnRegexDetector.testSync(pattern, invalidConfig);
+					assert.ok(response2 === vulnRegexDetector.responses.safe, `Query failed: response ${response2}, probably due to my invalid config.server (so cache failed)`);
+
+					// Clean up.
+					remove.removeSync(persistentDir);
+
+					// Now a query with an invalid config should fail.
+					const response3 = vulnRegexDetector.testSync(pattern, invalidConfig);
+					assert.ok(response3 === vulnRegexDetector.responses.invalid, `Query succeeded? response ${response3}`);
+				});
 			});
+
+			describe('memory', () => {
+				it('should hit cache instead of failing when config.server is invalid', () => {
+					const pattern = 'abc';
+					// Make sync query to prime local persistent cache.
+					let validConfig = { cache: { type: vulnRegexDetector.cacheTypes.memory } };
+					const response1 = vulnRegexDetector.testSync(pattern, validConfig);
+					assert.ok(response1 === vulnRegexDetector.responses.safe, `Error, unexpected response for sync query: ${response1}`);
+
+					let invalidConfig = {
+						server: {
+							hostname: 'no such host',
+							port: 1
+						},
+						cache: {
+							type: vulnRegexDetector.cacheTypes.memory
+						}
+					};
+					const response2 = vulnRegexDetector.testSync(pattern, invalidConfig);
+					assert.ok(response2 === vulnRegexDetector.responses.safe, `Query failed: response ${response2}, probably due to my invalid config.server (so cache failed)`);
+				});
+			});
+		});
+	});
+
+	describe('defaultServerConfig', () => {
+		it('has hostname', () => {
+			return assert.ok(vulnRegexDetector.defaultServerConfig.hostname, 'Missing hostname');
+		});
+
+		it('has port', () => {
+			return assert.ok(vulnRegexDetector.defaultServerConfig.port, 'Missing port');
+		});
+	});
+
+	describe('defaultCacheConfig', () => {
+		it('has type', () => {
+			return assert.ok(vulnRegexDetector.defaultCacheConfig.type, 'Missing type');
+		});
+	});
+
+	describe('cacheTypes', () => {
+		it('has persistent', () => {
+			return assert.ok(vulnRegexDetector.cacheTypes.persistent, 'Missing persistent');
+		});
+
+		it('has memory', () => {
+			return assert.ok(vulnRegexDetector.cacheTypes.memory, 'Missing memory');
+		});
+
+		it('has none', () => {
+			return assert.ok(vulnRegexDetector.cacheTypes.none, 'Missing none');
 		});
 	});
 
