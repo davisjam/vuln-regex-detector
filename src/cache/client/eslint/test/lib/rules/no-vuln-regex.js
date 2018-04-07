@@ -11,6 +11,12 @@
 const rule = require('../../../lib/rules/no-vuln-regex');
 const RuleTester = require('eslint').RuleTester;
 
+/* For testing environment variable support.
+ *
+ * process.env.ESLINT_PLUGIN_NO_VULN_REGEX_PERSISTENT_DIR = '/tmp/foooo';
+ * console.log(process.env.ESLINT_PLUGIN_NO_VULN_REGEX_PERSISTENT_DIR);
+ */
+
 // ------------------------------------------------------------------------------
 // Tests
 // ------------------------------------------------------------------------------
