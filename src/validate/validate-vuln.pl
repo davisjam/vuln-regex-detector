@@ -54,30 +54,40 @@ for my $key ("language", "pattern", "evilInput", "nPumps", "timeLimit") {
 $json->{nPumps} = int($json->{nPumps});
 $json->{timeLimit} = int($json->{timeLimit});
 
-# Compute an attackString from evilInput.
-my $attackString = "";
-for my $pumpPair (@{$json->{evilInput}->{pumpPairs}}) {
-  $attackString .= $pumpPair->{prefix};
-  $attackString .= ($pumpPair->{pump} x $json->{nPumps});
-}
-$attackString .= $json->{evilInput}->{suffix};
-
-# Prep an input file.
-my $input = { "pattern" => $json->{pattern},
-              "input"   => $attackString,
-            };
-my $tmpFile = "/tmp/validate-vuln-$$.json";
-&writeToFile("file"=>$tmpFile, "contents"=>encode_json($input));
-
-# Invoke the appropriate validator.
-my $validator = $language2validator{$json->{language}};
-
-my ($rc, $out) = &cmd("timeout $json->{timeLimit}s $validator $tmpFile");
-unlink $tmpFile;
-my $timedOut = ($rc eq 124) ? 1 : 0;
-
 my $result = $json;
-$result->{timedOut} = $timedOut;
+$result->{timedOut} = 0;
+
+# Compute an attackString from evilInput.
+# If the detector recommended a cubic or higher (>= 2 pumpPairs), try all polynomial powers
+# by working our way up the list of pumpPairs.
+# See https://github.com/NicolaasWeideman/RegexStaticAnalysis/issues/11.
+my @pumpPairs = @{$json->{evilInput}->{pumpPairs}};
+for my $nPumpPairsToTry (1 .. scalar(@pumpPairs)) {
+  my $attackString = "";
+  for my $pumpPair (@pumpPairs[0 .. $nPumpPairsToTry-1]) {
+    $attackString .= $pumpPair->{prefix};
+    $attackString .= ($pumpPair->{pump} x $json->{nPumps});
+  }
+  $attackString .= $json->{evilInput}->{suffix};
+
+  # Prep an input file.
+  my $input = { "pattern" => $json->{pattern},
+                "input"   => $attackString,
+              };
+  my $tmpFile = "/tmp/validate-vuln-$$.json";
+  &writeToFile("file"=>$tmpFile, "contents"=>encode_json($input));
+
+  # Invoke the appropriate validator.
+  my $validator = $language2validator{$json->{language}};
+
+  my ($rc, $out) = &cmd("timeout $json->{timeLimit}s $validator $tmpFile");
+  unlink $tmpFile;
+  my $timedOut = ($rc eq 124) ? 1 : 0;
+
+  if ($timedOut) {
+    $result->{timedOut} = 1;
+  }
+}
 
 print STDOUT encode_json($result) . "\n";
 exit 0;
