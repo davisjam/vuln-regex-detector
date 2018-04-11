@@ -57,9 +57,8 @@ MongoClient.connect(dbUrl)
 		const uploadCollection = db.collection(dbUploadCollectionName);
 		const lookupCollection = db.collection(dbLookupCollectionName);
 
-		// Pending promises for DB updates resulting from scan of docs.
 		log(`Handling each doc in ${dbUploadCollectionName}`);
-		let pending = [];
+		let pending = []; // Pending promises for DB updates resulting from scan of docs.
 		return uploadCollection.find().forEach((doc) => {
 			// Test each doc.
 			log(`Got doc: ${JSON.stringify(doc)}`);
