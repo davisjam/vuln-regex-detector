@@ -1,0 +1,1 @@
+{"pattern": ".+\\@.+\\..+", "validateVuln_language": "javascript", "validateVuln_nPumps": 100000, "validateVuln_timeLimit": 2, "useCache": 0}
