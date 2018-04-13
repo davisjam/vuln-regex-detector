@@ -206,6 +206,27 @@ describe('vulnRegexDetector', () => {
 		});
 
 		describe('cache', () => {
+			const testCacheExpiryPersistentDir = path.join(os.tmpdir(), 'vuln-regex-detector-TEST-cache-expiration-time');
+			afterEach('remove testCacheExpiryPersistentDir to set up a clean state for subsequent tests', () => {
+				let rmdir = (dir) => {
+					for (const file of fs.readdirSync(dir)) {
+						const filePath = path.join(dir, file);
+						const stat = fs.lstatSync(filePath);
+						if (stat.isDirectory()) {
+							rmdir(filePath);
+						} else {
+							fs.unlinkSync(filePath);
+						}
+					}
+					fs.rmdirSync(dir);
+				};
+				try {
+					rmdir(testCacheExpiryPersistentDir);
+				} catch (err) {
+					// The only expected error is ENOENT from when the cache directory does not exist
+					if (err.code !== 'ENOENT') throw err;
+				}
+			});
 			describe('persistent', () => {
 				it('should hit cache instead of failing when config.server is invalid', () => {
 					const pattern = 'abc';
@@ -271,9 +292,14 @@ describe('vulnRegexDetector', () => {
 					assert.ok(response3 === vulnRegexDetector.responses.invalid, `Query succeeded? response ${response3}`);
 				});
 				it('should not return an expired cache value', () => {
-					const pattern = 'abcde'; // TODO perhaps make some temporary cache for all of the tests and clear it each time.
+					const pattern = 'abc';
+					const cacheConfig = {
+						type: vulnRegexDetector.cacheTypes.persistent,
+						persistentDir: testCacheExpiryPersistentDir,
+						expirationTime: -1
+					};
 					// Make sync query to prime local persistent cache, but use negative cache value to ensure expiration.
-					let validConfig = { cache: { type: vulnRegexDetector.cacheTypes.persistent, expirationTime: -1 } };
+					let validConfig = { cache: cacheConfig };
 					const response1 = vulnRegexDetector.testSync(pattern, validConfig);
 					assert.ok(response1 === vulnRegexDetector.responses.safe, `Error, unexpected response for sync query: ${response1}`);
 
@@ -282,10 +308,7 @@ describe('vulnRegexDetector', () => {
 							hostname: 'no such host',
 							port: 1
 						},
-						cache: {
-							type: vulnRegexDetector.cacheTypes.persistent,
-							expirationTime: -1
-						}
+						cache: cacheConfig
 					};
 					const response2 = vulnRegexDetector.testSync(pattern, invalidConfig);
 					assert.ok(response2 === vulnRegexDetector.responses.invalid, `Query succeeded? response ${response2}. Unless 'no such host' is a valid hostname we must have a cache hit on an expired entry`);
@@ -313,9 +336,13 @@ describe('vulnRegexDetector', () => {
 					assert.ok(response2 === vulnRegexDetector.responses.safe, `Query failed: response ${response2}, probably due to my invalid config.server (so cache failed)`);
 				});
 				it('should not return an expired cache value', () => {
-					const pattern = 'abcde'; // TODO perhaps make some temporary cache for all of the tests and clear it each time.
+					const pattern = 'abcde';
+					const cacheConfig = {
+						type: vulnRegexDetector.cacheTypes.memory,
+						expirationTime: -1
+					};
 					// Make sync query to prime local in-memory cache, but use negative cache value to ensure expiration.
-					let validConfig = { cache: { type: vulnRegexDetector.cacheTypes.memory, expirationTime: -1 } };
+					let validConfig = { cache: cacheConfig };
 					const response1 = vulnRegexDetector.testSync(pattern, validConfig);
 					assert.ok(response1 === vulnRegexDetector.responses.safe, `Error, unexpected response for sync query: ${response1}`);
 
@@ -324,10 +351,7 @@ describe('vulnRegexDetector', () => {
 							hostname: 'no such host',
 							port: 1
 						},
-						cache: {
-							type: vulnRegexDetector.cacheTypes.memory,
-							expirationTime: -1
-						}
+						cache: cacheConfig
 					};
 					const response2 = vulnRegexDetector.testSync(pattern, invalidConfig);
 					assert.ok(response2 === vulnRegexDetector.responses.invalid, `Query succeeded? response ${response2}. Unless 'no such host' is a valid hostname we must have a cache hit on an expired entry`);
