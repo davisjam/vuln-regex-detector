@@ -37,6 +37,9 @@ const CACHE_TYPES = {
 	none: 'none'
 };
 
+const CACHE_VERSION = '2'; // Cache updated to version 2 to permit an expiration time on cache entries.
+// This required an invalidation of previous entries that would never expire and not be in the proper format.
+
 /* Cache: memory. */
 
 /* Default config. */
@@ -47,7 +50,8 @@ const defaultServerConfig = {
 
 const defaultCacheConfig = {
 	type: CACHE_TYPES.persistent,
-	persistentDir: path.join(os.tmpdir(), 'vuln-regex-detector-client-persistentCache')
+	persistentDir: path.join(os.tmpdir(), 'vuln-regex-detector-client-persistentCache'),
+	expirationTime: 60 * 60 * 24 * 7 // 7 days in seconds
 };
 
 /**********
@@ -276,6 +280,11 @@ function handleCacheConfig (cacheConfig) {
 		cacheConfig.persistentDir = defaultCacheConfig.persistentDir;
 	}
 
+	// expirationTime must be an integer value
+	if (!cacheConfig.hasOwnProperty('expirationTime') || !Number.isInteger(cacheConfig.expirationTime)) {
+		cacheConfig.expirationTime = defaultCacheConfig.expirationTime;
+	}
+
 	return cacheConfig;
 }
 
@@ -342,7 +351,20 @@ function updateCache (config, pattern, response) {
 		return;
 	}
 
-	return kvPut(config, pattern, response);
+	/* Only cache VULNERABLE|SAFE responses. */
+	if (response !== RESPONSE_VULNERABLE && response !== RESPONSE_SAFE) {
+		return;
+	}
+
+	/* This entry will expire config.expirationTime seconds from now. */
+	const expirationTimeInMilliseconds = 1000 * config.cache.expirationTime;
+	const expiryDate = new Date(Date.now() + expirationTimeInMilliseconds);
+	const wrappedResponse = {
+		response: response,
+		validUntil: expiryDate.toISOString()
+	};
+
+	return kvPut(config, pattern, wrappedResponse);
 }
 
 /* Returns RESPONSE_{VULNERABLE|SAFE} on hit, else RESPONSE_UNKNOWN on miss or disabled. */
@@ -351,15 +373,20 @@ function checkCache (config, pattern) {
 		return RESPONSE_UNKNOWN;
 	}
 
-	return kvGet(config, pattern);
+	const valueRetrieved = kvGet(config, pattern);
+	if (valueRetrieved === RESPONSE_UNKNOWN) {
+		return RESPONSE_UNKNOWN;
+	}
+	/* Check if the cache entry has expired. */
+	const lastValidDate = new Date(valueRetrieved.validUntil);
+	if (lastValidDate <= Date.now()) {
+		/* The cache entry has expired. */
+		return RESPONSE_UNKNOWN;
+	}
+	return valueRetrieved.response;
 }
 
 function kvPut (config, key, value) {
-	/* Only cache VULNERABLE|SAFE responses. */
-	if (value !== RESPONSE_VULNERABLE && value !== RESPONSE_SAFE) {
-		return;
-	}
-
 	/* Put in the appropriate cache. */
 	switch (config.cache.type) {
 	case CACHE_TYPES.persistent:
@@ -418,7 +445,7 @@ function kvPersistentFname (config, key) {
 	 * Using a hash might give us false reports on collisions, but this is
 	 * exceedingly unlikely in typical use cases (a few hundred regexes tops). */
 	const hash = crypto.createHash('md5').update(key).digest('hex');
-	const fname = path.join(config.cache.persistentDir, `${hash}.json`);
+	const fname = path.join(config.cache.persistentDir, `${hash}-v${CACHE_VERSION}.json`);
 	return fname;
 }
 
@@ -463,9 +490,7 @@ function kvGetPersistent (config, key) {
 let pattern2response = {};
 
 function kvPutMemory (key, value) {
-	if (!pattern2response.hasOwnProperty(key)) {
-		pattern2response[key] = value;
-	}
+	pattern2response[key] = value;
 }
 
 function kvGetMemory (key) {
