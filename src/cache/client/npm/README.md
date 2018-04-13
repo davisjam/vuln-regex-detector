@@ -59,13 +59,14 @@ The module exports:
  *    },
  *    cache: {
  *      type: cacheTypes.persistent,
- *      [persistentDir]: '/tmp/vuln-regex-detector-client-persistentCache'
+ *      [persistentDir]: '/tmp/vuln-regex-detector-client-persistentCache',
+ *      [expirationTime]: 60 * 60 * 24 * 7 // 7 days in seconds
  *    }
  *  }
  *
  * Config defaults if not provided:
  *   server: indicated in the example. This is a research server at Virginia Tech.
- *   cache: 'persistent' with persistentDir in a subdir of os.tmpdir().
+ *   cache: 'persistent' with persistentDir in a subdir of os.tmpdir() and an expirationTime of 7 days.
  *
  * @returns Promise fulfilled with responses.X or rejected with responses.invalid.
  */
@@ -118,6 +119,7 @@ If you cannot connect to the server or your query is malformed, you'll get the a
 ## Optimizations
 
 This module maintains a persistent local cache stored in `os.tmpdir()` to reduce the number of HTTP queries.
+The length of time that a result will be stored in the cache before another HTTP query is required is governed by the expirationTime parameter.
 
 ## Privacy
 
