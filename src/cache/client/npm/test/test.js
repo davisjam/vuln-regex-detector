@@ -208,20 +208,8 @@ describe('vulnRegexDetector', () => {
 		describe('cache', () => {
 			const testCacheExpiryPersistentDir = path.join(os.tmpdir(), 'vuln-regex-detector-TEST-cache-expiration-time');
 			afterEach('remove testCacheExpiryPersistentDir to set up a clean state for subsequent tests', () => {
-				let rmdir = (dir) => {
-					for (const file of fs.readdirSync(dir)) {
-						const filePath = path.join(dir, file);
-						const stat = fs.lstatSync(filePath);
-						if (stat.isDirectory()) {
-							rmdir(filePath);
-						} else {
-							fs.unlinkSync(filePath);
-						}
-					}
-					fs.rmdirSync(dir);
-				};
 				try {
-					rmdir(testCacheExpiryPersistentDir);
+					remove.removeSync(testCacheExpiryPersistentDir);
 				} catch (err) {
 					// The only expected error is ENOENT from when the cache directory does not exist
 					if (err.code !== 'ENOENT') throw err;
