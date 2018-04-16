@@ -43,6 +43,7 @@ if (-f $cacheConfigFile) {
 
 my $detectVuln = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/detect-vuln.pl";
 my $validateVuln = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/validate-vuln.pl";
+my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cli/cache-client.js"; # We don't need this to work.
 
 for my $script ($detectVuln, $validateVuln) {
   if (not -x $script) {
@@ -80,6 +81,12 @@ for my $key ("pattern", "validateVuln_language") {
 
 if (defined $query->{useCache} and not $query->{useCache}) {
   &log("Query says I should not use the cache");
+  $useCache = 0;
+}
+
+# We can't use the cache if we have no client.
+if (not -x $cacheClient) {
+  &log("Cannot use cache, could not find cacheClient $cacheClient");
   $useCache = 0;
 }
 
@@ -207,8 +214,7 @@ sub queryCache {
     "result"   => $PATTERN_UNKNOWN,
   };
 
-  my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cli/cache-client.js";
-  if (not -f $cacheClient) {
+  if (not -x $cacheClient) {
     &log("queryCache: Could not find client $cacheClient");
     return $unknownResponse;
   }
@@ -259,8 +265,7 @@ sub queryCache {
 sub updateCache {
   my ($checkRegexResponse) = @_;
 
-  my $cacheClient = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/cache/client/cache-client.js";
-  if (not -f $cacheClient) {
+  if (not -x $cacheClient) {
     &log("updateCache: Could not find client $cacheClient");
     return;
   }
