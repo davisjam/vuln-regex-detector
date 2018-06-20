@@ -57,9 +57,9 @@ else {
 
 if (not $opinion->{isSafe}) {
   # Find the evil input suggested by rxxr2.
-  my ($prefix) = ($out =~ m/PREFIX: (.+)/); # . won't cross \n
-  my ($pump)   = ($out =~ m/PUMPABLE[\s\S]*?PUMPABLE: (.+)/); # The first PUMPABLE is boolean, the second is an attack string. There is a third, so use non-greedy match. . won't cross \n.
-  my ($suffix) = ($out =~ m/SUFFIX: (.+)/); # . won't cross \n
+  my ($prefix) = ($out =~ m/PREFIX: (.*)/); # . won't cross \n
+  my ($pump)   = ($out =~ m/PUMPABLE[\s\S]*?PUMPABLE: (.*)/); # The first PUMPABLE is boolean, the second is an attack string. There is a third, so use non-greedy match. . won't cross \n.
+  my ($suffix) = ($out =~ m/SUFFIX: (.*)/); # . won't cross \n
 
   if (defined($prefix) and defined($pump) and defined($suffix)) {
     my $details = { "pumpPairs" => [ { "prefix" => $prefix,
