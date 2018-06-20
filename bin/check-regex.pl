@@ -19,6 +19,11 @@ my $PATTERN_INVALID    = "INVALID";
 my $REQUEST_LOOKUP = "LOOKUP";
 my $REQUEST_UPDATE = "UPDATE";
 
+my $DEBUG = 0;
+if ($ENV{REGEX_DEBUG}) {
+  $DEBUG = 1;
+}
+
 my $tmpFile = "/tmp/check-regex-$$.json";
 my $progressFile = "/tmp/check-regex-$$-progress.log";
 unlink($tmpFile, $progressFile);
@@ -143,6 +148,7 @@ else {
   &log("Querying detectors");
   &writeToFile("file"=>$tmpFile, "contents"=>encode_json($detectVulnQuery));
   my $detectReport = decode_json(&chkcmd("$detectVuln $tmpFile 2>>$progressFile"));
+  &log("Detectors said: " . encode_json($detectReport));
 
   $result->{detectReport} = $detectReport;
 
@@ -182,6 +188,8 @@ else {
           $result->{isVulnerable} = 1;
           $result->{validateReport} = $report;
           last;
+        } else {
+          &log("evilInput failed");
         }
       }
     }
@@ -194,7 +202,7 @@ else {
 }
 
 # Cleanup.
-unlink($tmpFile, $progressFile);
+unlink($tmpFile, $progressFile) unless $DEBUG;
 
 # Report results.
 print STDOUT encode_json($result) . "\n";
