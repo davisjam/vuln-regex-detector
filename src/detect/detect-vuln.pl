@@ -12,6 +12,11 @@ use JSON::PP; # I/O
 use Carp;
 use Time::HiRes qw( gettimeofday tv_interval );
 
+my $DEBUG = 0;
+if ($ENV{REGEX_DEBUG}) {
+  $DEBUG = 1;
+}
+
 # Check dependencies.
 if (not defined $ENV{VULN_REGEX_DETECTOR_ROOT}) {
   die "Error, VULN_REGEX_DETECTOR_ROOT must be defined\n";
@@ -83,8 +88,8 @@ for my $pattern (@patternsToTry) {
     my $stderr = &readFile("file"=>$stderrFile);
     my @filesToClean = ($stderr =~ m/CLEANUP: (\S+)/g);
     &log("Cleaning up @filesToClean");
-    unlink @filesToClean;
-    unlink $stderrFile;
+    unlink @filesToClean unless $DEBUG;
+    unlink $stderrFile unless $DEBUG;
 
     my $opinion = { "name"         => $d->{name},
                     "secToDecide" => sprintf("%.4f", $elapsed),
@@ -115,7 +120,7 @@ for my $pattern (@patternsToTry) {
     push @detectorOpinions, $opinion;
   }
 
-  unlink $tmpPatternFile;
+  unlink $tmpPatternFile unless $DEBUG;
 }
 
 $query->{detectorOpinions} = \@detectorOpinions;
