@@ -11,6 +11,13 @@ These are regexes that could lead to [catastrophic backtracking](https://www.reg
 2. Run the `configure` script to install dependencies and build the detectors.
 3. Use the scripts in `bin`. See their [README](https://github.com/davisjam/vuln-regex-detector/blob/master/bin/README.md) for details.
 
+Alternately, a `Dockerfile` is provided to allow the project to run on non-Ubuntu systems. The image can be built and used as follows:
+
+```shell
+$ docker build -t vuln-regex-detector .
+$ docker run --rm vuln-regex-detector bin/check-tree.pl tree.json
+```
+
 ## Remote queries
 
 If you don't want to install and run the detectors locally, you can use the [vuln-regex-detector npm module](https://www.npmjs.com/package/vuln-regex-detector).
