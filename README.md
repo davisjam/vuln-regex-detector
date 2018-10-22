@@ -76,9 +76,20 @@ Here are the shortcomings of the analysis.
 
 # Supported OSes
 
-The configuration code works on Ubuntu (tested on Ubuntu 16).
+The configuration code supports Ubuntu directly (tested on Ubuntu 16), for other distros/OSes a container can be used (see Docker below).
 Everything else should work on any Linux.
 Open an issue if you want other distros/OSes and we can discuss.
+
+## Docker
+
+A `Dockerfile` is provided to make the code easier to configure on non-Ubuntu systems. The image can be built and used as follows:
+
+```shell
+$ docker build -t vuln-regex-detector .
+$ docker run --rm -v /tmp/query:/query vuln-regex-detector bin/check-regex.pl /query/unsafe-1.json
+```
+
+where `/tmp/query/unsafe-1.json` contains the pattern to be checked.
 
 # Contributing
 
