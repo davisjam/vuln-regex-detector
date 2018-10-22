@@ -11,13 +11,6 @@ These are regexes that could lead to [catastrophic backtracking](https://www.reg
 2. Run the `configure` script to install dependencies and build the detectors.
 3. Use the scripts in `bin`. See their [README](https://github.com/davisjam/vuln-regex-detector/blob/master/bin/README.md) for details.
 
-Alternately, a `Dockerfile` is provided to allow the project to run on non-Ubuntu systems. The image can be built and used as follows:
-
-```shell
-$ docker build -t vuln-regex-detector .
-$ docker run --rm vuln-regex-detector bin/check-tree.pl tree.json
-```
-
 ## Remote queries
 
 If you don't want to install and run the detectors locally, you can use the [vuln-regex-detector npm module](https://www.npmjs.com/package/vuln-regex-detector).
@@ -83,9 +76,20 @@ Here are the shortcomings of the analysis.
 
 # Supported OSes
 
-The configuration code works on Ubuntu (tested on Ubuntu 16).
+The configuration code supports Ubuntu directly (tested on Ubuntu 16), for other distros/OSes a container can be used (see Docker below).
 Everything else should work on any Linux.
 Open an issue if you want other distros/OSes and we can discuss.
+
+## Docker
+
+A `Dockerfile` is provided to make the code easier to configure on non-Ubuntu systems. The image can be built and used as follows:
+
+```shell
+$ docker build -t vuln-regex-detector .
+$ docker run --rm -v /tmp/query:/query vuln-regex-detector bin/check-regex.pl /query/unsafe-1.json
+```
+
+where `/tmp/query/unsafe-1.json` contains the pattern to be checked.
 
 # Contributing
 
