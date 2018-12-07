@@ -24,6 +24,7 @@ my %language2validator = (
   "php"        => "$pref/php/query-php.php",
   "ruby"       => "$pref/ruby/query-ruby.rb",
   "perl"       => "$pref/perl/query-perl.pl",
+  "rust"       => "$pref/rust/query-rust",
 );
 
 for my $ext (keys %language2validator) {
@@ -48,6 +49,9 @@ for my $key ("language", "pattern", "evilInput", "nPumps", "timeLimit") {
   if (not defined($json->{$key})) {
     die "Error, undefined field: <$key>\n";
   }
+}
+if (not exists $language2validator{$json->{language}}) {
+  die "Error, unsupported language $json->{language}\n";
 }
 
 # Make sure integer types are correct.
@@ -79,6 +83,7 @@ for my $nPumpPairsToTry (1 .. scalar(@pumpPairs)) {
 
   # Invoke the appropriate validator.
   my $validator = $language2validator{$json->{language}};
+
 
   my ($rc, $out) = &cmd("timeout $json->{timeLimit}s $validator $tmpFile");
   unlink $tmpFile;
