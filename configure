@@ -1,7 +1,18 @@
 #!/usr/bin/env perl
+# Env. var params:
+#   SKIP_PKG_DEPS=1    Don't try to install packages (sudo-less)
+#                      (You should install from source and set your PATH appropriately)
 
 use strict;
 use warnings;
+
+my $SKIP_PKG_DEPS;
+if (defined $ENV{SKIP_PKG_DEPS} and $ENV{SKIP_PKG_DEPS}) {
+  $SKIP_PKG_DEPS = 1;
+} else {
+  $SKIP_PKG_DEPS = 0;
+}
+my $INSTALL_PKG_DEPS = not $SKIP_PKG_DEPS;
 
 if (not defined $ENV{VULN_REGEX_DETECTOR_ROOT}) {
   die "Error, you must define VULN_REGEX_DETECTOR_ROOT\n";
@@ -21,15 +32,26 @@ if ($osRelease !~ m/NAME="Ubuntu"/i) {
 
 &log("Configuring repo");
 
-# Install dependencies
-my @miscPackages_ubuntu = ("zip", "unzip", "make", "git");
-my @rxxr2Packages_ubuntu = ("ocaml");
-my @wustholzPackages_ubuntu = ("default-jdk");
-my @dynamicAnalysisPackages_ubuntu = ("nodejs", "php-cli", "ruby");
-my @requiredPackages_ubuntu = (@miscPackages_ubuntu, @rxxr2Packages_ubuntu, @wustholzPackages_ubuntu, @dynamicAnalysisPackages_ubuntu);
-
-&log("Installing dependencies");
-&chkcmd("sudo apt-get install -y @requiredPackages_ubuntu");
+if ($INSTALL_PKG_DEPS) {
+  # Install dependencies
+  my @miscPackages_ubuntu = ("zip", "unzip", "make", "git");
+  my @rxxr2Packages_ubuntu = ("ocaml");
+  my @wustholzPackages_ubuntu = ("default-jdk");
+  my @dynamicAnalysisPackages_ubuntu = ("nodejs", "php-cli", "ruby");
+  my @requiredPackages_ubuntu = (@miscPackages_ubuntu, @rxxr2Packages_ubuntu, @wustholzPackages_ubuntu, @dynamicAnalysisPackages_ubuntu);
+  
+  &log("Installing dependencies");
+  &chkcmd("sudo apt-get install -y @requiredPackages_ubuntu");
+}
+else {
+  # I know rxxr2 works on ocaml 4.02.3 since that is the Ubuntu 16 version.
+  # Install instructions here: http://caml.inria.fr/pub/distrib/ocaml-4.02/notes/INSTALL
+  # davisjam@sushi-headnode:~/ocaml-4.02.3$ ./configure -prefix ~/usr/ # <-- The prefix says 'make install, put stuff in ~/usr/bin' for a local install.
+  #   make world.opt
+  #   make install
+  # And add '$HOME/usr/bin' to $PATH.
+  &log("Skipping installation of packages. Hope you did a local install correctly");
+}
 
 # Submodules
 &log("Initializing/updating submodules");
@@ -85,7 +107,7 @@ sub configureRXXR2 {
   my $file = "$dir/scan.bin";
 
   if (-d $dir) {
-    &log("rxxr2 already installed");
+    &log("wuestholz already installed ($ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors/$dir)");
   }
   else {
     &log("Setting up rxxr2");
@@ -121,7 +143,7 @@ sub configureWustholz {
   my $file = "$dir/regexcheck.jar";
 
   if (-d $dir) {
-    &log("wuestholz already installed");
+    &log("wuestholz already installed ($ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors/$dir)");
   }
   else {
     &log("Setting up wuestholz");
