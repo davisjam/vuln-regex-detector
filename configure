@@ -45,8 +45,9 @@ if ($INSTALL_PKG_DEPS) {
 }
 else {
   # I know rxxr2 works on ocaml 4.02.3 since that is the Ubuntu 16 version.
-  # Install instructions here: http://caml.inria.fr/pub/distrib/ocaml-4.02/notes/INSTALL
-  # davisjam@sushi-headnode:~/ocaml-4.02.3$ ./configure -prefix ~/usr/ # <-- The prefix says 'make install, put stuff in ~/usr/bin' for a local install.
+  # It also works on 4.07.0 (latest release), so let's use that.
+  # Install instructions here: http://caml.inria.fr/pub/distrib/ocaml-4.07/notes/INSTALL
+  # davisjam@sushi-headnode:~/ocaml-4.07.0$ ./configure -prefix $HOME/usr/ # <-- The prefix says 'make install, put stuff in $HOME/usr/bin' for a local install.
   #   make world.opt
   #   make install
   # And add '$HOME/usr/bin' to $PATH.
