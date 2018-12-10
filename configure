@@ -92,6 +92,12 @@ sub configureDetectors {
 }
 
 sub configureValidators {
+  # Build validators that need it
+  &log("Building rust validator");
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/rust" or die "Error, chdir failed: $!\n";
+  &chkcmd("make");
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}" or die "Error, chdir failed: $!\n";
+
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate" or die "Error, chdir failed: $!\n";
   chdir "test" or die "Error, chdir failed: $!\n";
   &chkcmd("./gen-tests.pl");
