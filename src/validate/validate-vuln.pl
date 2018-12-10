@@ -84,8 +84,8 @@ for my $nPumpPairsToTry (1 .. scalar(@pumpPairs)) {
   # Invoke the appropriate validator.
   my $validator = $language2validator{$json->{language}};
 
-
-  my ($rc, $out) = &cmd("timeout $json->{timeLimit}s $validator $tmpFile");
+  # Use KILL because Ruby blocks TERM during regex match (??).
+  my ($rc, $out) = &cmd("timeout --signal=KILL $json->{timeLimit}s $validator $tmpFile");
   unlink $tmpFile;
   my $timedOut = ($rc eq 124) ? 1 : 0;
 
