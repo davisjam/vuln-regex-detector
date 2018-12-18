@@ -37,17 +37,20 @@ if (not $validQuery) {
 my $len = length($query->{input});
 &log("matching: pattern /$query->{pattern}/ inputStr: len $len");
 
-my $matched;
-my $except = "NO_EXCEPT";
+my $NO_REDOS_EXCEPT = "NO_REDOS_EXCEPT";
+my $RECURSION_EXCEPT = "RECURSION_LIMIT";
+
+my $matched = 0;
+my $except = $NO_REDOS_EXCEPT;
 eval {
 
   local $SIG{__WARN__} = sub {
     my $recursionSubStr = "Complex regular subexpression recursion limit";
     my $message = shift;
     
-    # if we got a recusion limit warning
+    # if we got a recursion limit warning
     if (index($message, $recursionSubStr) != -1) {
-      $except = "RECURSION_LIMIT";
+      $except = $RECURSION_EXCEPT;
     }
     else {
       &log("warning: $message");
@@ -58,12 +61,23 @@ eval {
 };
 
 # this just catches all warnings -- can we specify by anything other than string text?
+my $result = $query;
 if ($@) {
   &log("Caught input exception: $@");
+  &log("\$except: $except");
+  if ($except eq $NO_REDOS_EXCEPT) {
+    # An exception that wasn't ReDoS-related -- invalid pattern
+    $result->{validPattern} = 0;
+  } else {
+    # ReDoS-related exception -- valid pattern
+    $result->{validPattern} = 1;
+  }
   $except = "INVALID_INPUT";
+} else {
+  # No exceptions -- valid pattern
+  $result->{validPattern} = 1;
 }
 
-my $result = $query;
 $result->{inputLength} = $len;
 $result->{matched} = $matched ? 1 : 0;
 $result->{exceptionString} = $except;

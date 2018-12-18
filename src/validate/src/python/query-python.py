@@ -18,15 +18,19 @@ def main():
     obj = json.load(FH)
 
   # Prepare a regexp
-  regexp = re.compile(obj['pattern'])
+  try:
+    regexp = re.compile(obj['pattern'])
+    obj['validPattern'] = True
 
-  # Try a match
-  log("matching: pattern /{}/ input: length {}".format(obj['pattern'], len(obj['input'])))
-  matchResult = regexp.match(obj['input'])
+    # Try a match
+    log("matching: pattern /{}/ input: length {}".format(obj['pattern'], len(obj['input'])))
+    matchResult = regexp.match(obj['input'])
 
-  # Print result
-  obj['inputLength'] = len(obj['input'])
-  obj['matched'] = 1 if matchResult else 0
+    # Print result
+    obj['inputLength'] = len(obj['input'])
+    obj['matched'] = 1 if matchResult else 0
+  except:
+    obj['validPattern'] = False
   sys.stdout.write(json.dumps(obj) + '\n')
 
 def log(msg):

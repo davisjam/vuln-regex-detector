@@ -86,14 +86,24 @@ for my $nPumpPairsToTry (1 .. scalar(@pumpPairs)) {
 
   # Use KILL because Ruby blocks TERM during regex match (??).
   my ($rc, $deathSignal, $out) = &cmd("timeout --signal=KILL $json->{timeLimit}s $validator $tmpFile");
-  #unlink $tmpFile;
+  unlink $tmpFile;
   # On timeout, rc is 124 if using TERM and 128+9 if using KILL
   # The right-shift of 8 in &cmd turns 128+9 into 9
   my $timedOut = ($rc eq 124 or $deathSignal eq 9) ? 1 : 0;
-  &log("rc $rc timedOut $timedOut");
+  &log("rc $rc timedOut $timedOut out\n  $out");
 
+  # Append appropriate values to $result
   if ($timedOut) {
+    # If it timed out
     $result->{timedOut} = 1;
+  }
+  else {
+    $result->{timedOut} = 0;
+
+    # If it didn't time out, we should have valid JSON output.
+    # Was the regex valid?
+    my $validatorRes = decode_json($out);
+    $result->{validPattern} = $validatorRes->{validPattern};
   }
 }
 
