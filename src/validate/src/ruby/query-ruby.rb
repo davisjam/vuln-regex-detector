@@ -17,10 +17,16 @@ def main()
 
   # Query regexp.
   my_log("matching: pattern /" + obj['pattern'] + "/ input: length " + obj['input'].length.to_s)
-  if (/#{obj['pattern']}/ =~ obj['input'])
-    matched = 1
-  else
-    matched = 0
+  obj['validPattern'] = 1
+  matched = 0
+  begin
+    if (/#{obj['pattern']}/ =~ obj['input'])
+      matched = 1
+    else
+      matched = 0
+    end
+  rescue
+    obj['validPattern'] = 0
   end
 
   # Compose output.

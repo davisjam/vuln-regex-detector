@@ -13,6 +13,7 @@ use std::io::prelude::*;
 
 // JSON
 extern crate serde;
+#[macro_use]
 extern crate serde_json;
 use serde_json::{Value, Error};
 
@@ -41,7 +42,7 @@ fn main() {
 	// Get file from command-line args
 	let args: Vec<String> = env::args().collect();
 	let filename = &args[1];
-	println!("File: {}", filename);
+	eprintln!("File: {}", filename);
 
 	// Read file contents into string
 	let mut f = File::open(filename).expect("file not found");
@@ -50,20 +51,40 @@ fn main() {
 	f.read_to_string(&mut contents)
 			.expect("something went wrong reading the file");
 
-	println!("File contents:\n{}", contents);
+	eprintln!("File contents:\n{}", contents);
 
 	// Parse as JSON
 	let mut patternObj: Value = serde_json::from_str(&contents).unwrap();
 
   let pattern = patternObj["pattern"].as_str().unwrap();
-  println!("The pattern is: {}", pattern);
+  eprintln!("The pattern is: {}", pattern);
 
 	let input = patternObj["input"].as_str().unwrap();
 
-	// Match
-	println!("matching: pattern {} input {}", pattern, input);
+	// Try a match
+	eprintln!("matching: pattern {} input {}", pattern, input);
 
-  let re = Regex::new(pattern).unwrap();
-  let matched = re.is_match(&input);
-	println!("matched: {}", matched);
+	// Result object
+	let mut res: serde_json::Value = json!({
+		"pattern": patternObj["pattern"].as_str().unwrap(),
+		"input": patternObj["input"].as_str().unwrap(),
+		"inputLength": patternObj["input"].as_str().unwrap().len(),
+	});
+
+  match Regex::new(pattern) {
+		Ok(re) => {
+			// Could build. Add 'matched' field.
+			res["validPattern"] = serde_json::Value::Bool(true);
+
+			let matched = re.is_match(&input);
+			eprintln!("matched: {}", matched);
+
+			res["matched"] = serde_json::Value::Bool(matched);
+		}
+		Err(error) => {
+			// Could not build.
+			res["validPattern"] = serde_json::Value::Bool(false);
+		}
+	};
+	println!("{}", res.to_string());
 }

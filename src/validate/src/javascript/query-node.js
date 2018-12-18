@@ -28,14 +28,18 @@ if (!validQuery) {
 }
 
 // Try to match string against pattern.
-console.error(`matching: pattern /${query.pattern}/ inputStr: len ${query.input.length}`);
-var re = new RegExp(query.pattern);
-
-var matched = query.input.match(re);
-
 var result = query;
-result.inputLength = query.input.length;
-result.matched = matched ? 1 : 0;
+console.error(`matching: pattern /${query.pattern}/ inputStr: len ${query.input.length}`);
+try {
+	var re = new RegExp(query.pattern);
+	result.validPattern = true;
+	var matched = query.input.match(re);
+	result.inputLength = query.input.length;
+	result.matched = matched ? 1 : 0;
+} catch (e) {
+	result.validPattern = false;
+}
 
 console.log(JSON.stringify(result));
+
 process.exit(0);

@@ -32,7 +32,10 @@ function main() {
   if(strpos($last_error['message'], $compilation_failed_message) !== false) {
     my_log("caught the invalid input");
     $except = "INVALID_INPUT";
-  }
+		$obj->{'validPattern'} = 0;
+  } else {
+		$obj->{'validPattern'} = 1;
+	}
 
   // Compose output.
   $obj->{'matched'} = $matched;
