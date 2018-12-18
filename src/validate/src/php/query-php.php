@@ -24,7 +24,8 @@ function main() {
 
   // capture exception, if any.
   // will return OK even if there's compilation problems.
-  $except = array_flip(get_defined_constants(true)['pcre'])[preg_last_error()];
+  // PHP 7.4-dev emits a warning unless we @ to ignore it.
+  $except = @array_flip(get_defined_constants(true)['pcre'])[preg_last_error()];
 
   // check for compilation
   $compilation_failed_message = 'preg_match(): Compilation failed:';
