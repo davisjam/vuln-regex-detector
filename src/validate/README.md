@@ -2,6 +2,12 @@
 
 This directory contains validators for different programming languages (viz. their regex engines).
 
+The `check-regex-support.pl` driver accepts (in JSON):
+- 'language' (of interest)
+- 'pattern' (regex)
+
+It prints a summary in JSON to STDOUT.
+
 The `validate-vuln.pl` driver accepts (in JSON):
 - 'language' (of interest)
 - 'pattern' (regex)
