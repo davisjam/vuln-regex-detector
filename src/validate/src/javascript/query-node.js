@@ -33,9 +33,11 @@ console.error(`matching: pattern /${query.pattern}/ inputStr: len ${query.input.
 try {
 	var re = new RegExp(query.pattern);
 	result.validPattern = true;
-	var matched = query.input.match(re);
 	result.inputLength = query.input.length;
+
+	var matched = query.input.match(re);
 	result.matched = matched ? 1 : 0;
+	delete result.input; // TODO Sometimes too long for Perl?
 } catch (e) {
 	result.validPattern = false;
 }

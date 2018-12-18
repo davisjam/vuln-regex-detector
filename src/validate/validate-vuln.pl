@@ -94,8 +94,9 @@ for my $nPumpPairsToTry (1 .. scalar(@pumpPairs)) {
 
   # Append appropriate values to $result
   if ($timedOut) {
-    # If it timed out
+    # If it timed out, it was a valid regex pattern.
     $result->{timedOut} = 1;
+    $result->{validPattern} = 1;
   }
   else {
     $result->{timedOut} = 0;
