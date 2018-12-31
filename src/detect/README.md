@@ -49,6 +49,7 @@ These are the detectors we use:
 1. RXXR2 (Rathnayake and Thielecke). [Project homepage](http://www.cs.bham.ac.uk/~hxt/research/rxxr2/index.shtml), [paper](https://arxiv.org/pdf/1405.7058.pdf).
 2. REXPLOITER (Wustholz, Olivo, Heule, and Dillig). [JAR](http://www.wuestholz.com/downloads/regexcheck.zip), [paper](https://arxiv.org/pdf/1701.04045.pdf).
 3. RegexStaticAnalysis (Weideman, van der Merwe, Berglund, and Watson). [Project homepage](https://github.com/NicolaasWeideman/RegexStaticAnalysis), [paper](https://link.springer.com/chapter/10.1007/978-3-319-40946-7_27), [thesis](http://scholar.sun.ac.za/bitstream/handle/10019.1/102879/weideman_static_2017.pdf?sequence=2).
+4. ReScue (Shen, Jiang, Xu, Yu, Ma, and Lu). [Project homepage](https://github.com/2bdenny/ReScue), [paper](http://cs.nju.edu.cn/changxu/1_publications/ASE18.pdf).
 
 # How do I add a new detector?
 
