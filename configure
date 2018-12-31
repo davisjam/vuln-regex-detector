@@ -87,23 +87,28 @@ sub configureDetectors {
   &configureRXXR2();
   &configureWustholz();
   &configureWeideman();
+  &configureShen();
 
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}" or die "Error, chdir failed: $!\n";
   return;
 }
 
 sub configureValidators {
-  # Build validators that need it
+  ## Build validators that need it
+
+  # Rust
   &log("Building rust validator");
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/rust" or die "Error, chdir failed: $!\n";
   &chkcmd("make");
-  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}" or die "Error, chdir failed: $!\n";
 
-  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate" or die "Error, chdir failed: $!\n";
-  chdir "test" or die "Error, chdir failed: $!\n";
+
+  ## Build validator tests
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/test" or die "Error, chdir failed: $!\n";
   &chkcmd("./gen-tests.pl");
 
+  ## Reset pwd
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}" or die "Error, chdir failed: $!\n";
+
   return;
 }
 
@@ -185,6 +190,22 @@ sub configureWeideman {
   }
 
   &log("Configured weideman");
+
+  return;
+}
+
+sub configureShen {
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors" or die "Error, chdir failed: $!\n";
+
+  my $dir = "shen-ReScue";
+  my $file = "$dir/release/ReScue.jar";
+
+  &chkcmd("cd $dir; mvn clean compile; cd -");
+  if (not -f $file) {
+    die "Error, configuring shen failed: could not find $file\n";
+  }
+
+  &log("Configured shen");
 
   return;
 }
