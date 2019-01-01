@@ -125,7 +125,7 @@ sub configureRXXR2 {
   my $file = "$dir/scan.bin";
 
   if (-d $dir) {
-    &log("wuestholz already installed ($ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors/$dir)");
+    &log("rathnayake already installed ($ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors/$dir)");
   }
   else {
     &log("Setting up rxxr2");

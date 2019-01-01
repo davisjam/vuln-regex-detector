@@ -162,7 +162,7 @@ else {
                           };
 
   # See what each detector thought.
-  # Bail if any finds a vulnerability.
+  # Bail if any finds a vulnerability so we don't waste time.
   $result->{isVulnerable} = 0;
   for my $do (@{$detectReport->{detectorOpinions}}) {
     # Are we done?
@@ -173,6 +173,7 @@ else {
 
     # Maybe vulnerable?
     if ($do->{hasOpinion} and $do->{opinion}->{canAnalyze} and not $do->{opinion}->{isSafe}) {
+      &log("$do->{name} says it may be vulnerable");
       # If unparseable, evilInput is an empty array or has elt 0 'COULD-NOT-PARSE'
       for my $evilInput (@{$do->{opinion}->{evilInput}}) {
         next if $evilInput eq "COULD-NOT-PARSE";
@@ -192,6 +193,8 @@ else {
           &log("evilInput failed");
         }
       }
+    } else {
+      &log("$do->{name} does not think it is vulnerable");
     }
   }
 
