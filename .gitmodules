@@ -1,3 +1,7 @@
 [submodule "src/detect/weideman-RegexStaticAnalysis"]
 	path = src/detect/src/detectors/weideman-RegexStaticAnalysis
 	url = https://github.com/NicolaasWeideman/RegexStaticAnalysis
+[submodule "src/detect/src/detectors/shen-ReScue"]
+	path = src/detect/src/detectors/shen-ReScue
+	url = https://github.com/davisjam/ReScue
+	branch = SupportForVRD
