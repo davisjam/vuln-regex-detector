@@ -63,7 +63,7 @@ if ($out =~ m/AttackResult: ({.+})\n/) {
   my $attackResult = decode_json($attackResultStr);
   $opinion->{canAnalyze} = $attackResult->{canAnalyze};
   $opinion->{isSafe} = $attackResult->{isSafe};
-  $opinion->{evilInputs} = $attackResult->{evilInputs};
+  $opinion->{evilInput} = $attackResult->{evilInputs};
 } else {
   $opinion->{canAnalyze} = 0;
   $opinion->{isSafe} = "UNKNOWN";
