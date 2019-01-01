@@ -1,7 +1,8 @@
 #!/usr/bin/env perl
 # Env. var params:
 #   SKIP_PKG_DEPS=1    Don't try to install packages (sudo-less)
-#                      (You should install from source and set your PATH appropriately)
+#                      (You should install any needed packages/binaries from
+#                       source and set your PATH appropriately)
 
 use strict;
 use warnings;
@@ -37,8 +38,9 @@ if ($INSTALL_PKG_DEPS) {
   my @miscPackages_ubuntu = ("zip", "unzip", "make", "git");
   my @rxxr2Packages_ubuntu = ("ocaml");
   my @wustholzPackages_ubuntu = ("default-jdk");
+  my @shenPackages_ubuntu = ("maven");
   my @dynamicAnalysisPackages_ubuntu = ("nodejs", "php-cli", "ruby");
-  my @requiredPackages_ubuntu = (@miscPackages_ubuntu, @rxxr2Packages_ubuntu, @wustholzPackages_ubuntu, @dynamicAnalysisPackages_ubuntu);
+  my @requiredPackages_ubuntu = (@miscPackages_ubuntu, @rxxr2Packages_ubuntu, @wustholzPackages_ubuntu, @shenPackages_ubuntu, @dynamicAnalysisPackages_ubuntu);
   
   &log("Installing dependencies");
   &chkcmd("sudo apt-get install -y @requiredPackages_ubuntu");
@@ -101,6 +103,10 @@ sub configureValidators {
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/rust" or die "Error, chdir failed: $!\n";
   &chkcmd("make");
 
+  # Java
+  &log("Building Java validator");
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/java" or die "Error, chdir failed: $!\n";
+  &chkcmd("mvn clean compile");
 
   ## Build validator tests
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/test" or die "Error, chdir failed: $!\n";
@@ -198,9 +204,9 @@ sub configureShen {
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors" or die "Error, chdir failed: $!\n";
 
   my $dir = "shen-ReScue";
-  my $file = "$dir/release/ReScue.jar";
+  my $file = "$dir/target/ReScue-1.0.jar";
 
-  &chkcmd("cd $dir; mvn clean compile; cd -");
+  &chkcmd("cd $dir; mvn clean compile; mvn package; cd -");
   if (not -f $file) {
     die "Error, configuring shen failed: could not find $file\n";
   }
