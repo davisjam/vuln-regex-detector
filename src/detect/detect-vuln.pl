@@ -155,6 +155,7 @@ sub getDetectors {
   my @detectors = ( {"name" => "rathnayake-rxxr2"},
                     {"name" => "weideman-RegexStaticAnalysis"},
                     {"name" => "wuestholz-RegexCheck"},
+                    {"name" => "shen-ReScue"},
                   );
   # field: driver
   for my $d (@detectors) {
