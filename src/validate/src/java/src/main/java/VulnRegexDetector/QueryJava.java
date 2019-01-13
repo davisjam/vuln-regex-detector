@@ -32,15 +32,31 @@ public class QueryJava {
       log(String.format("matching: pattern /%s/, input: len %d value <%s>",
         pattern, input.length(), input));
 
-      // Attempt match.
-      Pattern p = Pattern.compile(pattern);
-      Matcher m = p.matcher(input);
+      // Try to create regex
+      Pattern p = null;
+      boolean validPattern = false;
+      try {
+        p = Pattern.compile(pattern);
+        validPattern = true;
+      } catch (Exception e) {
+        validPattern = false;
+      }
 
-      boolean found = m.find();
+      if (validPattern) {
+        // Attempt match
+        Matcher m = p.matcher(input);
+        boolean found = m.find();
 
-      obj.addProperty("inputLength", input.length());
-      obj.addProperty("matched", found ? 1 : 0);
+        obj.addProperty("validPattern", true);
+        obj.addProperty("inputLength", input.length());
+        obj.addProperty("matched", found ? 1 : 0);
+      } else {
+        obj.addProperty("validPattern", false);
+        obj.addProperty("inputLength", input.length());
+        obj.addProperty("matched", 0);
+      }
 
+      // Emit
       System.out.println(new Gson().toJson(obj));
     } else {
       System.out.println("Usage: INVOCATION query.json");
