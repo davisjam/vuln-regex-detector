@@ -26,6 +26,7 @@ my %language2validator = (
   "perl"       => "$pref/perl/query-perl.pl",
   "rust"       => "$pref/rust/query-rust",
   "go"         => "$pref/rust/query-go",
+  "java"       => "$pref/java/query-java.pl",
 );
 
 for my $ext (keys %language2validator) {
