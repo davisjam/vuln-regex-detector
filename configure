@@ -99,14 +99,19 @@ sub configureValidators {
   ## Build validators that need it
 
   # Rust
-  &log("Building rust validator");
+  &log("Building Rust validator");
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/rust" or die "Error, chdir failed: $!\n";
+  &chkcmd("make");
+
+  # Go
+  &log("Building Go validator");
+  chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/go" or die "Error, chdir failed: $!\n";
   &chkcmd("make");
 
   # Java
   &log("Building Java validator");
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/src/java" or die "Error, chdir failed: $!\n";
-  &chkcmd("mvn clean compile");
+  &chkcmd("mvn clean compile; mvn clean package");
 
   ## Build validator tests
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/validate/test" or die "Error, chdir failed: $!\n";
