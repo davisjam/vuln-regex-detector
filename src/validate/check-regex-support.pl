@@ -43,17 +43,20 @@ if (not @ARGV) {
 # Parse args
 my $jsonFile = $ARGV[0];
 if (not -f $jsonFile) {
-  die "Error, no such file $jsonFile\n";
+  print "Error, no such file $jsonFile\n";
+  exit 1;
 }
 my $json = decode_json(`cat $jsonFile`);
 
 for my $key ("language", "pattern") {
   if (not defined($json->{$key})) {
-    die "Error, undefined field: <$key>\n";
+    print "Error, undefined field: <$key>\n";
+    exit 1;
   }
 }
 if (not exists $language2validator{$json->{language}}) {
-  die "Error, unsupported language $json->{language}\n";
+  print "Error, unsupported language $json->{language}\n";
+  exit 1;
 }
 
 my $result = $json;
