@@ -39,6 +39,7 @@ public class QueryJava {
         p = Pattern.compile(pattern);
         validPattern = true;
       } catch (Exception e) {
+        log("Exception compiling pattern: " + e);
         validPattern = false;
       }
 
