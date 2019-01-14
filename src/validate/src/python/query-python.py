@@ -14,8 +14,10 @@ def main():
 
   queryFile = sys.argv[1]
 
-  with open(queryFile, 'r') as FH:
-    obj = json.load(FH)
+  with open(queryFile, 'r', encoding='utf-8') as FH:
+    cont = FH.read()
+    log("Contents of {}: {}".format(queryFile, cont))
+    obj = json.loads(cont)
 
   # Prepare a regexp
   try:
@@ -29,7 +31,8 @@ def main():
     # Print result
     obj['inputLength'] = len(obj['input'])
     obj['matched'] = 1 if matchResult else 0
-  except:
+  except BaseException as e:
+    log('Exception: ' + str(e))
     obj['validPattern'] = False
   sys.stdout.write(json.dumps(obj) + '\n')
 
