@@ -25,7 +25,7 @@ my %language2validator = (
   "ruby"       => "$pref/ruby/query-ruby.rb",
   "perl"       => "$pref/perl/query-perl.pl",
   "rust"       => "$pref/rust/query-rust",
-  "go"         => "$pref/rust/query-go",
+  "go"         => "$pref/go/query-go",
   "java"       => "$pref/java/query-java.pl",
 );
 
