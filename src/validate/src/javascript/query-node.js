@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Author: Jamie Davis <davisjam@vt.edu>
-// Description: Try REDOS attack on Node.js
+// Description: Test regex in Node.js
 
 var fs = require('fs');
 
@@ -35,8 +35,21 @@ try {
 	result.validPattern = true;
 	result.inputLength = query.input.length;
 
-	var matched = query.input.match(re);
+	var matched = query.input.match(re); // Partial-match semantics
 	result.matched = matched ? 1 : 0;
+	if (matched) {
+		result.matchContents = {
+			'matchedString': matched[0],
+			'captureGroups': matched.slice(1).map(g => {
+        // Convert unused groups (null) to empty captures ("") for cross-language consistency
+        if (g == null) { 
+          return '';
+        } else {
+          return g;
+        }
+      }),
+		};
+	}
 	delete result.input; // TODO Sometimes too long for Perl?
 } catch (e) {
 	result.validPattern = false;

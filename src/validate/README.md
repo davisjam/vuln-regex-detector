@@ -4,9 +4,10 @@ This directory contains validators for different programming languages (viz. the
 
 The `check-regex-support.pl` driver accepts (in JSON):
 - 'language' (of interest)
-- 'pattern' (regex)
+- 'pattern' (regex pattern)
+- ['input'] (string) -- by default we use "a"
 
-It prints a summary in JSON to STDOUT.
+It prints a summary in JSON to STDOUT, including the match behavior.
 
 The `validate-vuln.pl` driver accepts (in JSON):
 - 'language' (of interest)

@@ -1,0 +1,1 @@
+{"pattern": "(a)b(c|d)", "input": "abd"}

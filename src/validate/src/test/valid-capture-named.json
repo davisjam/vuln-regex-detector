@@ -1,0 +1,1 @@
+{"pattern": "(?P<g1>a)b(c)", "input": "abc"}

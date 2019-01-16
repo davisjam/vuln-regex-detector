@@ -18,14 +18,32 @@ def main()
   # Query regexp.
   my_log("matching: pattern /" + obj['pattern'] + "/ input: length " + obj['input'].length.to_s)
   obj['validPattern'] = 1
+  obj['matchContents'] = {
+		"matchedString" => "",
+		"captureGroups" => []
+	}
   matched = 0
   begin
-    if (/#{obj['pattern']}/ =~ obj['input'])
+    md = /#{obj['pattern']}/.match(obj['input']) # Partial match
+		if md
       matched = 1
+			obj['matchContents']['matchedString'] = md[0]
+
+			# Build captures, converting any unused groups to ""
+			captures = []
+			md.captures().each { |x|
+			  if x
+					captures.push(x)
+        else
+					captures.push("")
+				end
+			}
+			obj['matchContents']['captureGroups'] = captures
     else
       matched = 0
     end
-  rescue
+  rescue => error
+	  puts error
     obj['validPattern'] = 0
   end
 
