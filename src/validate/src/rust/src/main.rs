@@ -1,8 +1,6 @@
 // Author: Jamie Davis <davisjam@vt.edu>
-// Description: Attempt REDOS against Rust
-//   NB This should always fail because Rust claims linear-time matching.
-//      Seeing the performance will indicate the cost of the linear-time solution in production.
-//   NB Does not follow the API of all of the other query-LANGUAGE solutions
+// Description: Test regex in Python
+//   NB This should always take linear-time, unless there are subtleties in the Rust docs.
 
 // command-line args
 use std::env;
@@ -23,20 +21,6 @@ extern crate serde_derive;
 // Regex
 extern crate regex;
 use regex::Regex;
-
-/*
-// JSON object types
-
-struct EvilInput {
-}
-
-#[derive(Serialize, Deserialize)]
-struct Pattern {
-    pattern: String,
-    nPumps: u8,
-		evilInput: EvilInput,
-}
-*/
 
 fn main() {
 	// Get file from command-line args
@@ -76,10 +60,31 @@ fn main() {
 			// Could build. Add 'matched' field.
 			res["validPattern"] = serde_json::Value::Bool(true);
 
-			let matched = re.is_match(&input);
-			eprintln!("matched: {}", matched);
-
-			res["matched"] = serde_json::Value::Bool(matched);
+      // Partial-match semantics
+			match re.captures(&input) {
+				Some(caps) => {
+					res["matched"] = serde_json::Value::Bool(true);
+					let mut matchedString = caps.get(0).unwrap().as_str();
+					let mut captureGroups = Vec::new();
+					for i in 1..caps.len() {
+						match caps.get(i) {
+							Some(m) => {
+								captureGroups.push(m.as_str());
+							},
+							None => {
+								captureGroups.push(""); // Interpret unused capture group as ""
+							}
+						}
+					}
+					let mut matchContents = json!({});
+					matchContents["matchedString"] = json!(matchedString);
+					matchContents["captureGroups"] = json!(captureGroups);
+					res["matchContents"] = matchContents;
+				},
+				None => {
+					res["matched"] = serde_json::Value::Bool(false);
+				}
+			}
 		}
 		Err(error) => {
 			// Could not build.

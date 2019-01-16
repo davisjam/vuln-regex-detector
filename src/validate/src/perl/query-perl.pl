@@ -41,9 +41,14 @@ my $NO_REDOS_EXCEPT = "NO_REDOS_EXCEPT";
 my $RECURSION_EXCEPT = "RECURSION_LIMIT";
 
 my $matched = 0;
+my $matchContents = {
+  "matchedString" => "",
+  "captureGroups" => []
+};
 my $except = $NO_REDOS_EXCEPT;
 eval {
 
+  # Exception handler
   local $SIG{__WARN__} = sub {
     my $recursionSubStr = "Complex regular subexpression recursion limit";
     my $message = shift;
@@ -57,7 +62,19 @@ eval {
     }
   };
 
-  $matched = $query->{input} =~ m/$query->{pattern}/;
+  # Perform the match
+  if ($query->{input} =~ m/$query->{pattern}/) {
+    $matched = 1;
+    $matchContents->{matchedString} = $&; # I love perl
+
+    if (defined $1) { # Were there any capture groups?
+      my @matches = ($query->{input} =~ m/$query->{pattern}/);
+      @matches = map { if (defined $_) { $_ } else { ""; } } @matches;
+      $matchContents->{captureGroups} = \@matches;
+    } else {
+      $matchContents->{captureGroups} = [];
+    }
+  }
 };
 
 # this just catches all warnings -- can we specify by anything other than string text?
@@ -80,6 +97,7 @@ if ($@) {
 
 $result->{inputLength} = $len;
 $result->{matched} = $matched ? 1 : 0;
+$result->{matchContents} = $matchContents;
 $result->{exceptionString} = $except;
 
 print encode_json($result) . "\n";

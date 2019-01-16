@@ -20,7 +20,9 @@ function main() {
   // Query regexp.
   my_log('matching: Pattern /' . $obj->{'pattern'} . '/, input: len ' . strlen($obj->{'input'}));
 
-  $matched = @preg_match('/' . $obj->{'pattern'} . '/', $obj->{'input'});
+  $matched = @preg_match('/' . $obj->{'pattern'} . '/', $obj->{'input'}, $matches); // Partial match
+	//var_dump($matches);
+	// NB: (a?)abc|(d)  on "abc" --> (a?) is empty, but (d) is just dropped
 
   // capture exception, if any.
   // will return OK even if there's compilation problems.
@@ -40,6 +42,11 @@ function main() {
 
   // Compose output.
   $obj->{'matched'} = $matched;
+	if ($matched) {
+		$obj->{'matchContents'} = new stdClass();
+		$obj->{'matchContents'}->{'matchedString'} = $matches[0];
+		$obj->{'matchContents'}->{'captureGroups'} = array_slice($matches, 1);
+	}
   $obj->{'inputLength'} = strlen($obj->{'input'});
   $obj->{'exceptionString'} = $except;
   fwrite(STDOUT, json_encode($obj) . "\n");

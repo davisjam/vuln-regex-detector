@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # Author: Jamie Davis <davisjam@vt.edu>
-# Description: Check if a regex is supported in a language
+# Description: Check if a regex is supported in a language (and summarize match behavior)
 #
 # Requirements:
 #   - VULN_REGEX_DETECTOR_ROOT must be defined
@@ -63,7 +63,7 @@ my $result = $json;
 
 # Prep an input file.
 my $input = { "pattern" => $json->{pattern}, # What matters is whether the pattern works
-              "input"   => "a" # We don't care about this, but this is the vrd driver API
+              "input"   => defined($json->{input}) ? $json->{input} : "a" # We will also track behavior on this input as a convenience
             };
 my $tmpFile = "/tmp/validate-vuln-$$.json";
 &writeToFile("file"=>$tmpFile, "contents"=>encode_json($input));
@@ -78,6 +78,21 @@ unlink $tmpFile;
 # Was the regex valid?
 my $validatorRes = decode_json($out);
 $result->{validPattern} = $validatorRes->{validPattern};
+
+if ($validatorRes->{validPattern}) {
+  # Copy matched and matchContents if they have been defined yet
+  my @copyOut = (
+    { "field" => "matched", "default" => 0 },
+    { "field" => "matchContents", "default" => { "matchedString" => "", "captureGroups" => [] } },
+  );
+  for my $co (@copyOut) {
+    if ($validatorRes->{$co->{field}}) {
+      $result->{$co->{field}} = $validatorRes->{$co->{field}};
+    } else {
+        $result->{$co->{field}} = $co->{default};
+    }
+  }
+}
 
 print STDOUT encode_json($result) . "\n";
 exit 0;

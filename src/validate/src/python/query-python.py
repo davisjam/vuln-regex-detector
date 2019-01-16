@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Author: Jamie Davis <davisjam@vt.edu>
-# Description: Try REDOS attack on Python3
+# Description: Test regex in Python
 
 import sys
 import json
@@ -26,11 +26,21 @@ def main():
 
     # Try a match
     log("matching: pattern /{}/ input: length {}".format(obj['pattern'], len(obj['input'])))
-    matchResult = regexp.match(obj['input'])
+    #matchResult = regexp.match(obj['input']) # Full-match semantics -- better case
+    matchResult = regexp.search(obj['input']) # Partial-match semantics -- worse case
 
     # Print result
     obj['inputLength'] = len(obj['input'])
     obj['matched'] = 1 if matchResult else 0
+    if matchResult:
+      obj['matched'] = 1
+      obj['matchContents'] = {
+        'matchedString': matchResult.group(0),
+        'captureGroups': [g if g is not None else "" for g in matchResult.groups()]
+      }
+    else:
+      obj['matched'] = 0
+      obj['matchContents'] = {}
   except BaseException as e:
     log('Exception: ' + str(e))
     obj['validPattern'] = False

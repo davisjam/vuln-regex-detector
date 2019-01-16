@@ -1,3 +1,4 @@
+// Author: Jamie Davis <davisjam@vt.edu>
 // Description: Test a <regex, input> pair in Go
 
 package main
@@ -19,14 +20,20 @@ type Query struct {
   Input string    `json:"input"`
 }
 
+type MatchContents struct {
+  MatchedString string          `json:"matchedString"`
+  CaptureGroups []string        `json:"captureGroups"`
+}
+
 type MatchResult struct {
   // Duplicate the Query
-  Pattern string      `json:"pattern"`
-  Input string        `json:"input"`
+  Pattern string         `json:"pattern"`
+  Input string           `json:"input"`
   // Additional fields
-  InputLength int     `json:"inputLength"`
-  ValidGoPattern bool `json:"validPattern"`
-  Matched bool        `json:"matched"`
+  InputLength int        `json:"inputLength"`
+  ValidGoPattern bool    `json:"validPattern"`
+  Matched bool           `json:"matched"`
+  MC MatchContents       `json:"matchContents"`
 }
 
 ///////////
@@ -74,9 +81,18 @@ func main() {
   re, err := regexp.Compile(query.Pattern)
   if err == nil {
     matchResult.ValidGoPattern = true
-    matches := re.FindSubmatch([]byte(query.Input))
+    matches := re.FindSubmatch([]byte(query.Input)) // Partial match
+
     if matches != nil {
+			//fmt.Println(matches)
       matchResult.Matched = true
+      matchResult.MC.MatchedString = string(matches[0])
+
+      // Build up the capture groups, from []byte to string
+      matchResult.MC.CaptureGroups = make([]string, 0)
+			for _, byteString := range matches[1:] {
+				matchResult.MC.CaptureGroups = append(matchResult.MC.CaptureGroups, string(byteString))
+			}
     } else {
       matchResult.Matched = false
     }
