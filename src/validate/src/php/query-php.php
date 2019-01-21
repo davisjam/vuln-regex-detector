@@ -45,6 +45,14 @@ function main() {
 	if ($matched) {
 		$obj->{'matchContents'} = new stdClass();
 		$obj->{'matchContents'}->{'matchedString'} = $matches[0];
+
+		// Unset any capture groups keyed by name instead of number for consistency with other testers
+		foreach ($matches as $key => $value) {
+			if (!is_int($key)) {
+				unset($matches[$key]);
+			}
+		}
+
 		$obj->{'matchContents'}->{'captureGroups'} = array_slice($matches, 1);
 	}
   $obj->{'inputLength'} = strlen($obj->{'input'});
