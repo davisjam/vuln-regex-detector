@@ -16,6 +16,10 @@ if (not defined($queryFile)) {
 }
 
 # Load query from file.
+&log("Loading query from $queryFile");
+# NB This is a possible source of false positives.
+# The outer wrapper assumes that the only potentially-slow phase is the actual regex evaluation.
+# For very long input files (e.g. 10MB), just parsing the input file can take O(seconds).
 my $query = decode_json(&readFile("file"=>$queryFile));
 
 # Check query is valid.
@@ -95,6 +99,7 @@ if ($@) {
   $result->{validPattern} = 1;
 }
 
+delete $result->{input}; # Might take a long time to print
 $result->{inputLength} = $len;
 $result->{matched} = $matched ? 1 : 0;
 $result->{matchContents} = $matchContents;
