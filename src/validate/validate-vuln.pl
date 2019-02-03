@@ -80,19 +80,19 @@ for my $nPumpPairsToTry (1 .. scalar(@pumpPairs)) {
   my $input = { "pattern" => $json->{pattern},
                 "input"   => $attackString,
               };
-  my $tmpFile = "/tmp/validate-vuln-$$.json";
-  &writeToFile("file"=>$tmpFile, "contents"=>encode_json($input));
+  my $tmpQueryFile = "/tmp/validate-vuln-$$-queryFile.json";
+  my $tmpStdoutFile = "/tmp/validate-vuln-$$-validator-stdout.json";
+  &writeToFile("file"=>$tmpQueryFile, "contents"=>encode_json($input));
 
   # Invoke the appropriate validator.
   my $validator = $language2validator{$json->{language}};
 
   # Use KILL because Ruby blocks TERM during regex match (??).
-  my ($rc, $deathSignal, $out) = &cmd("timeout --signal=KILL $json->{timeLimit}s $validator $tmpFile");
-  unlink $tmpFile;
+  my ($rc, $deathSignal, $out) = &cmd("timeout --signal=KILL $json->{timeLimit}s $validator $tmpQueryFile > $tmpStdoutFile");
   # On timeout, rc is 124 if using TERM and 128+9 if using KILL
   # The right-shift of 8 in &cmd turns 128+9 into 9
   my $timedOut = ($rc eq 124 or $deathSignal eq 9) ? 1 : 0;
-  &log("rc $rc timedOut $timedOut out\n  $out");
+  &log("rc $rc deathSignal $deathSignal timedOut $timedOut");
 
   # Append appropriate values to $result
   if ($timedOut) {
@@ -105,15 +105,30 @@ for my $nPumpPairsToTry (1 .. scalar(@pumpPairs)) {
 
     # If it didn't time out, we should have valid JSON output.
     # Was the regex valid?
-    my $validatorRes = decode_json($out);
+    my $content = &slurpFile($tmpStdoutFile);
+    my $validatorRes = decode_json($content);
     $result->{validPattern} = $validatorRes->{validPattern};
   }
+
+  unlink $tmpQueryFile;
+  unlink $tmpStdoutFile;
 }
 
 print STDOUT encode_json($result) . "\n";
 exit 0;
 
 ######################
+
+sub slurpFile {
+  my ($file) = @_;
+  {
+    open F, $file or die "Can't read $file: $!";
+    local $/;  # enable slurp mode, locally.
+    my $contents = <F>;
+    close F;
+    return $contents;
+  }
+}
 
 # input: %args: keys: file contents
 # output: $file
@@ -133,8 +148,8 @@ sub cmd {
   &log($cmd);
   my $out = `$cmd`;
 
-  my $deathSignal = $? & 127;
   my $rc = $? >> 8;
+  my $deathSignal = $rc & 127;
 
   return ($rc, $deathSignal, $out);
 }
