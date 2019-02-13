@@ -5,8 +5,10 @@ RUN apt-get update && apt-get install -y \
     golang-go \
     sudo \
     wget
+
+# Use Node 10.x (LTS); Xenial default (4.x) does not include npm
 RUN wget -qO- https://deb.nodesource.com/setup_10.x | bash -
-RUN apt-get install -y nodejs
+
 COPY . /app
 WORKDIR /app
 ENV VULN_REGEX_DETECTOR_ROOT /app
