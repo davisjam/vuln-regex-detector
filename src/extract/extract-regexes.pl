@@ -116,7 +116,7 @@ sub extension2language {
   my ($ext) = @_;
 
   my $language = $UNKNOWN_LANGUAGE;
-  if (lc $ext eq "js") {
+  if (lc $ext =~ m/^jsx?$/) {
     $language = "javascript";
   }
   elsif (lc $ext eq "py") {
