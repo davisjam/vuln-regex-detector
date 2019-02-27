@@ -173,28 +173,32 @@ else {
 
     # Maybe vulnerable?
     if ($do->{hasOpinion} and $do->{opinion}->{canAnalyze} and not $do->{opinion}->{isSafe}) {
-      &log("$do->{name} says it may be vulnerable");
+      my $isVariant = ($do->{patternVariant} eq $query->{pattern}) ? 1 : 0;
+      &log("$do->{name}: the regex may be vulnerable (isVariant $isVariant)");
       # If unparseable, evilInput is an empty array or has elt 0 'COULD-NOT-PARSE'
       for my $evilInput (@{$do->{opinion}->{evilInput}}) {
-        next if $evilInput eq "COULD-NOT-PARSE";
+        if ($evilInput eq "COULD-NOT-PARSE") {
+          &log("  $do->{name}: Could not parse the evil input");
+          next;
+        }
 
         # Does this evilInput trigger catastrophic backtracking?
         $validateVulnQuery->{evilInput} = $evilInput;
         my $queryString = encode_json($validateVulnQuery);
-        &log("Validating evilInput with query: $queryString");
+        &log("  $do->{name}: Validating the evil input (query: $queryString)");
         &writeToFile("file"=>$tmpFile, "contents"=>$queryString);
         my $report = decode_json(&chkcmd("$validateVuln $tmpFile 2>>$progressFile"));
         if ($report->{timedOut}) {
-          &log("evilInput worked: triggered a timeout");
+          &log("  $do->{name}: evil input triggered a regex timeout");
           $result->{isVulnerable} = 1;
           $result->{validateReport} = $report;
           last;
         } else {
-          &log("evilInput failed");
+          &log("  $do->{name}: evil input did not trigger a regex timeout");
         }
       }
     } else {
-      &log("$do->{name} does not think it is vulnerable");
+      &log("  $do->{name}: says not vulnerable");
     }
   }
 
