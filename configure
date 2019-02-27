@@ -35,11 +35,11 @@ if ($osRelease !~ m/NAME="Ubuntu"/i) {
 
 if ($INSTALL_PKG_DEPS) {
   # Install dependencies
-  my @miscPackages_ubuntu = ("zip", "unzip", "make", "git");
+  my @miscPackages_ubuntu = ("zip", "unzip", "make", "git", "wget", "vim");
   my @rxxr2Packages_ubuntu = ("ocaml");
   my @wustholzPackages_ubuntu = ("default-jdk");
   my @shenPackages_ubuntu = ("maven");
-  my @dynamicAnalysisPackages_ubuntu = ("nodejs", "php-cli", "ruby");
+  my @dynamicAnalysisPackages_ubuntu = ("nodejs", "php-cli", "ruby", "cargo", "golang-go");
   my @requiredPackages_ubuntu = (@miscPackages_ubuntu, @rxxr2Packages_ubuntu, @wustholzPackages_ubuntu, @shenPackages_ubuntu, @dynamicAnalysisPackages_ubuntu);
   
   &log("Installing dependencies");
