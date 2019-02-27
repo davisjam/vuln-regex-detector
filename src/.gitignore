@@ -1,0 +1,10 @@
+##
+# Build products
+##
+
+validate/src/go/query-go
+
+validate/src/rust/Cargo.lock
+validate/src/rust/target/
+
+validate/src/java/target/
