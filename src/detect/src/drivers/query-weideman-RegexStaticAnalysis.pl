@@ -13,6 +13,15 @@ use JSON::PP; # I/O
 use Data::Dumper;
 use Carp;
 
+my $DELETE_TMP_FILES = 1;
+
+# If considered unsafe, set to one of these
+my %PREDICTED_COMPLEXITY = (
+  "exponential" => "exponential",
+  "polynomial" => "polynomial",
+  "unknown" => "unknown"
+);
+
 # Check dependencies.
 if (not defined $ENV{VULN_REGEX_DETECTOR_ROOT}) {
   die "Error, VULN_REGEX_DETECTOR_ROOT must be defined\n";
@@ -62,7 +71,9 @@ my $classpath = "'$regexStaticAnalysisDir/bin:$regexStaticAnalysisDir/lib/gson-2
 my $jvmNoDumpFlags = ""; # TODO Is there a portable way to do this? "-XXnoJrDump -XXdumpSize:none"; # Disable crash files (generated if ulimit on memory exceeded).
 my $cmdString = "java $jvmNoDumpFlags -cp $classpath driver.Main --if=$tmpFile --test-eda-exploit-string=false --ida=true --timeout=0 --simple";
 my ($rc, $out) = &cmd("$cmdString 2>&1");
-unlink $tmpFile;
+if ($DELETE_TMP_FILES) {
+  unlink $tmpFile;
+}
 
 # Parse to determine opinion
 my $opinion = {};
@@ -78,24 +89,34 @@ else {
 if (not $opinion->{isSafe}) {
   my ($edaExploitString) = ($out =~ m/EDA exploit string as JSON:\s+({.*})/); # Greedy will grab the whole JSON string.
   my ($idaExploitString) = ($out =~ m/IDA exploit string as JSON:\s+({.*})/); # Greedy will grab the whole JSON string.
+  my $predictedComplexity = $PREDICTED_COMPLEXITY{"unknown"};
 
   my @evilInput;
 
   if (defined($edaExploitString)) {
+    $predictedComplexity = $PREDICTED_COMPLEXITY{"exponential"};
     my $es = &translateExploitString(decode_json($edaExploitString));
     push @evilInput, $es;
   }
   
   if (defined($idaExploitString)) {
+    # If for some reason it produces both E and I predictions, keep the stronger prediction
+    if ($predictedComplexity eq $PREDICTED_COMPLEXITY{"unknown"}) {
+      $predictedComplexity = $PREDICTED_COMPLEXITY{"polynomial"};
+    }
+
+    # But keep the proposed input just in case the stronger prediction is incorrect
     my $es = &translateExploitString(decode_json($idaExploitString));
     push @evilInput, $es;
   }
 
   if (@evilInput) {
+    $opinion->{predictedComplexity} = $predictedComplexity;
     $opinion->{evilInput} = \@evilInput;
   }
   else {
     &log("Although detector said it was unsafe, I could not identify evilInput in output\n$out");
+    $opinion->{predictedComplexity} = $predictedComplexity;
     $opinion->{evilInput} = ["COULD-NOT-PARSE"];
   }
 }
