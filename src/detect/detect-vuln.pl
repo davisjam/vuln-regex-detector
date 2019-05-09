@@ -49,11 +49,17 @@ my @DETECTORS = &getDetectors();
 if (defined $query->{detectors}) {
   @DETECTORS = grep { &listContains($query->{detectors}, $_->{name}) } @DETECTORS;
   if (not @DETECTORS) {
-    die "Error, no detectors matched names <@{$query->{detectors}}>\n";
+    die "Error, no available detectors matched names <@{$query->{detectors}}>\n";
   }
 }
 my @detectorNames = map { $_->{name} } @DETECTORS;
 &log("Using detectors <@detectorNames>");
+
+my @PATTERN_VARIANTS = &getPatternVariants();
+if (defined $query->{patternVariants}) {
+  @PATTERN_VARIANTS = grep { &listContains($query->{patternVariants}, $_) } @PATTERN_VARIANTS;
+}
+&log("Using pattern variants <@PATTERN_VARIANTS>");
 
 # Define limits on each detector.
 my $ONE_MB_IN_KB = 1*1024; # ulimit -m and -v accept units of KB.
@@ -62,7 +68,7 @@ my $memoryLimitInBytes = (defined $query->{memoryLimit}) ? int($query->{memoryLi
 my $limitTime = (defined $query->{timeLimit}) ? "timeout $query->{timeLimit}s" : "";
 my $ulimitMemory = (defined $query->{memoryLimit}) ? "ulimit -m $memoryLimitInBytes; ulimit -v $memoryLimitInBytes;" : "";
 
-my @patternsToTry = &expandPatternSpaceForDetectors($query->{pattern});
+my @patternsToTry = &expandPatternSpaceForDetectors($query->{pattern}, \@PATTERN_VARIANTS);
 
 # This will contain N_DETECTORS * scalar(@patternsToTry) opinions.
 my @detectorOpinions;
@@ -216,36 +222,68 @@ sub writeToFile {
   return $args{file};
 }
 
+sub getPatternVariants {
+  # Defaults are aggressive, we assume the outcome will be dynamically validated in the languages of interest
+  # "leftanchor" is the most conservative, "bigCurlies" is still pretty conservative
+  return ("leftanchor", "allCurlies");
+}
+
 sub expandPatternSpaceForDetectors {
-  my ($pattern) = @_;
+  my ($pattern, $patternVariantList) = @_;
+
+  my %dedupVariants;
+  for my $variant (@$patternVariantList) {
+    $dedupVariants{$variant} = 1;
+  }
+  my @variants = keys %dedupVariants;
 
   my @patternsToTry = ($pattern);
 
-  # If pattern is unanchored, a backtracking regex engine will run the loop:
-  #   for (1 .. n):
-  #     _match(regex, substr)
-  # This means that if each match is linear-time, the worst-case behavior is quadratic.
-  # For example, /a+$/ is quadratic in Node.js.
-  # The detectors don't seem to acknowledge this loop.
-  # We can simulate it by prefixing un-anchored regexes with '^(.*?)'.
-  # This is also how a linear-time engine scans all starting indices in parallel; see Cox's writings.
-  if (substr($query->{pattern}, 0, 1) ne "^") {
-    my $anchoredPattern = "^(.*?)$query->{pattern}";
-    push @patternsToTry, $anchoredPattern;
+  if (&listContains(\@variants, "leftanchor")) {
+    &log("Variant: leftanchor");
+    # If pattern is unanchored, a backtracking regex engine will run the loop:
+    #   for (1 .. n):
+    #     _match(regex, substr)
+    # This means that if each match is linear-time, the worst-case behavior is quadratic.
+    # For example, /a+$/ is quadratic in Node.js.
+    # The detectors don't seem to acknowledge this loop.
+    # We can simulate it by prefixing un-anchored regexes with '^(.*?)'.
+    # This is also how a linear-time engine scans all starting indices in parallel; see Cox's writings.
+    if (substr($query->{pattern}, 0, 1) ne "^") {
+      my $anchoredPattern = "^(.*?)$query->{pattern}";
+      push @patternsToTry, $anchoredPattern;
+    }
   }
 
-  # If pattern contains curlies "{\d*,\d*}", the detectors may time out due to graph expansion.
-  # We can try a more general pattern with "*" and "+" instead.
-  # The detectors might give false positives but that's OK, that's what the validate stage is for.
-  # I'm not being careful about escaped curly braces, so let's hope there are no meta-regexes here.
-  my $genericCurlies = $query->{pattern};
-  # {0, and {, both mean "0 or more"
-  $genericCurlies =~ s/{0,\d*}/\*/g;
-  $genericCurlies =~ s/{,\d*}/\*/g;
-  # {[1-9] means "1 or more"
-  $genericCurlies =~ s/{[1-9]\d*,\d*}/\+/g;
-  if ($genericCurlies ne $pattern) {
-    push @patternsToTry, $genericCurlies;
+  if (&listContains(\@variants, "allCurlies") or &listContains(\@variants, "bigCurlies")) {
+    # If pattern contains curlies "{\d*,\d*}", the detectors may time out due to graph expansion.
+    # We can try a more general pattern with "*" and "+" instead.
+    # The detectors might give false positives but that's OK, that's what the validate stage is for.
+    # I'm not being careful about escaped curly braces, so let's hope there are no meta-regexes here.
+    my $curlyThreshold;
+    if (&listContains(\@variants, "allCurlies")) {
+      &log("Variant: allCurlies");
+      $curlyThreshold = 0;
+    }
+    elsif (&listContains(\@variants, "bigCurlies")) {
+      &log("Variant: bigCurlies");
+      $curlyThreshold = 100; # Probably overly generous, but false positives are Bad.
+    }
+
+    my $decurlied = $query->{pattern};
+    $decurlied =~ s/\{(\d+),(\d+)\}/$2 > $curlyThreshold ? ($1 > 0 ? "+" : "*") : "{$1,$2}"/ge;
+    $decurlied =~ s/\{,(\d+)\}/$1 > $curlyThreshold ? "*" : "{,$1}"/ge;
+    $decurlied =~ s/\{(\d+),\}/$1 > 0 ? "+" : "*"/ge;
+
+    my $genericCurlies = $query->{pattern};
+    # {0, and {, both mean "0 or more"
+    $genericCurlies =~ s/{0,\d*}/\*/g;
+    $genericCurlies =~ s/{,\d*}/\*/g;
+    # {[1-9] means "1 or more"
+    $genericCurlies =~ s/{[1-9]\d*,\d*}/\+/g;
+    if ($genericCurlies ne $pattern) {
+      push @patternsToTry, $genericCurlies;
+    }
   }
 
   return @patternsToTry;
