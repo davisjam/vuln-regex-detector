@@ -28,6 +28,7 @@ my $pref = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/extract/src";
 my %language2extractor = (
   "javascript" => "$pref/javascript/extract-regexps.js",
   "python"     => "$pref/python/python-extract-regexps-wrapper.pl",
+  "html"       => "$pref/html/extract-js-to-file.py"   
 );
 
 for my $lang (keys %language2extractor) {
@@ -64,10 +65,29 @@ if (not $language) {
 }
 
 # Invoke the appropriate extractor.
+# If HTML file, extract the js part to create a new js file and pipeline it into the js extractor
+
 my $extractor = $language2extractor{$language};
 if ($extractor and -x $extractor) {
   print STDERR "$extractor '$json->{file}'\n";
+  my $original_path = $json->{file};
+
+  if ($language eq "html") {
+    # use html extractor to create a new js file containing all the js
+    my $jsFilePath = `$extractor '$json->{file}' 2>/dev/null`;
+    $json->{file} = $jsFilePath;
+    $extractor = $language2extractor{"javascript"};
+  }
+
   my $result = decode_json(`$extractor '$json->{file}' 2>/dev/null`);
+
+  if ($language eq "html") {
+    # Changes $result->{file} back to the path of the input html file
+    $result->{file} = $original_path;
+    # Deletes the temporary js file
+    `rm ./src/html/temp-js-content.js`;
+  }
+
   # Add the language to the output to simplify pipelining.
   $result->{language} = $language;
   print STDOUT encode_json($result) . "\n";
@@ -95,6 +115,7 @@ sub determineLanguage {
 
   # Check the 'file' command's guess.
   my ($rc, $out) = &cmd("file $file");
+
   #print "rc $rc out $out\n";
   if ($rc eq 0) {
     if ($out =~ m/(\s|\/)node(js)?\s/i) {
@@ -102,6 +123,9 @@ sub determineLanguage {
     }
     elsif ($out =~ m/\sPython\s/i) {
       $language = "python";
+    }
+    elsif ($out =~ m/\sHTML\s/i) {
+      $language = "html";
     }
   }
   # Did it work?
@@ -112,6 +136,7 @@ sub determineLanguage {
   return $language;
 }
 
+
 sub extension2language {
   my ($ext) = @_;
 
@@ -121,6 +146,9 @@ sub extension2language {
   }
   elsif (lc $ext eq "py") {
     $language = "python";
+  }
+  elsif (lc $ext eq "html") {
+    $language = "html";
   }
 
   return $language;
