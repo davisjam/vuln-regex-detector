@@ -90,7 +90,6 @@ sub configureDetectors {
   &configureWustholz();
   &configureWeideman();
   &configureShen();
-
   chdir "$ENV{VULN_REGEX_DETECTOR_ROOT}" or die "Error, chdir failed: $!\n";
   return;
 }
