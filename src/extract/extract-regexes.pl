@@ -28,7 +28,7 @@ my $pref = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/extract/src";
 my %language2extractor = (
   "javascript" => "$pref/javascript/extract-regexps.js",
   "python"     => "$pref/python/python-extract-regexps-wrapper.pl",
-  "html"       => "$pref/html/extract-js-to-file.py"   
+  "html"       => "$pref/html/extract-regexps-html.py"   
 );
 
 for my $lang (keys %language2extractor) {
@@ -70,23 +70,7 @@ if (not $language) {
 my $extractor = $language2extractor{$language};
 if ($extractor and -x $extractor) {
   print STDERR "$extractor '$json->{file}'\n";
-  my $original_path = $json->{file};
-
-  if ($language eq "html") {
-    # use html extractor to create a new js file containing all the js
-    my $jsFilePath = `$extractor '$json->{file}' 2>/dev/null`;
-    $json->{file} = $jsFilePath;
-    $extractor = $language2extractor{"javascript"};
-  }
-
   my $result = decode_json(`$extractor '$json->{file}' 2>/dev/null`);
-
-  if ($language eq "html") {
-    # Changes $result->{file} back to the path of the input html file
-    $result->{file} = $original_path;
-    # Deletes the temporary js file
-    `rm ./src/html/temp-js-content.js`;
-  }
 
   # Add the language to the output to simplify pipelining.
   $result->{language} = $language;
