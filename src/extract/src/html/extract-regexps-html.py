@@ -9,32 +9,43 @@ from bs4 import BeautifulSoup
 import sys
 import subprocess
 import json
+import tempfile
+
+def extract_js(file_path):
+    with open(file_path) as fp:
+        soup = BeautifulSoup(fp, 'html.parser')
+
+    js_from_html = ''
+    for script in soup.find_all('script'):
+        js_from_html += script.string
+
+    return js_from_html
+
+def extract_regexes(json_tempfile):
+    output = subprocess.run(['./extract-regexes.pl', json_tempfile.name], 
+        capture_output=True, text=True)
+    return json.loads(output.stdout)
 
 file_path = sys.argv[1]
-with open(file_path) as fp:
-    soup = BeautifulSoup(fp, 'html.parser')
-
-js_from_html = ''
-for script in soup.find_all('script'):
-    js_from_html += script.string
+js_from_html = extract_js(file_path)
 
 # create temp-js-content.js based on the location of extract-regexes.pl
-with open('./src/html/temp-js-content.js', 'w') as fp:
-    fp.write(js_from_html)
+js_tempfile = tempfile.NamedTemporaryFile(suffix='.js', mode='w+t')
+js_tempfile.writelines(js_from_html)
+js_tempfile.seek(0)
 
 # create temp json file to pass to the meta-program
-with open('./src/html/temp-json.json', 'w') as fp:
-    fp.write(json.dumps({"file": "./src/html/temp-js-content.js", "language": "javascript"}))
+json_tempfile = tempfile.NamedTemporaryFile(suffix='.json', mode='w+t')
+json_tempfile.writelines(json.dumps({"file": js_tempfile.name, "language": "javascript"}))
+json_tempfile.seek(0)
 
 # call the meta-program 
-output = subprocess.run(['./extract-regexes.pl', './src/html/temp-json.json'], 
-    capture_output=True, text=True)
-
-output_json = json.loads(output.stdout)
+output_json = extract_regexes(json_tempfile)
 output_json['file'] = file_path
 return_string = json.dumps(output_json)
 print(return_string, end = '')
 
 # delete the temp js and json file
-subprocess.run(['rm', './src/html/temp-js-content.js'])
-subprocess.run(['rm', './src/html/temp-json.json'])
+js_tempfile.close()
+json_tempfile.close()
+
