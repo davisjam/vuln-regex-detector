@@ -22,12 +22,19 @@ for script in soup.find_all('script'):
 with open('./src/html/temp-js-content.js', 'w') as fp:
     fp.write(js_from_html)
 
-# hardcoded js extractor location
-output = subprocess.run(['./src/javascript/extract-regexps.js', './src/html/temp-js-content.js'], capture_output=True, text=True)
+# create temp json file to pass to the meta-program
+with open('./src/html/temp-json.json', 'w') as fp:
+    fp.write(json.dumps({"file": "./src/html/temp-js-content.js", "language": "javascript"}))
+
+# call the meta-program 
+output = subprocess.run(['./extract-regexes.pl', './src/html/temp-json.json'], 
+    capture_output=True, text=True)
+
 output_json = json.loads(output.stdout)
 output_json['file'] = file_path
 return_string = json.dumps(output_json)
 print(return_string, end = '')
 
-# delete the temp js file
+# delete the temp js and json file
 subprocess.run(['rm', './src/html/temp-js-content.js'])
+subprocess.run(['rm', './src/html/temp-json.json'])
