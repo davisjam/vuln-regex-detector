@@ -10,6 +10,7 @@ import sys
 import subprocess
 import json
 import tempfile
+import os
 
 def extract_js(file_path):
     with open(file_path) as fp:
@@ -22,7 +23,7 @@ def extract_js(file_path):
     return js_from_html
 
 def extract_regexes(json_tempfile):
-    output = subprocess.run(['./extract-regexes.pl', json_tempfile.name], 
+    output = subprocess.run([os.path.join(os.getcwd(), 'extract-regexes.pl'), json_tempfile.name], 
         capture_output=True, text=True)
     return json.loads(output.stdout)
 
