@@ -22,31 +22,33 @@ def extract_js(file_path):
 
     return js_from_html
 
-def extract_regexes(json_tempfile):
-    output = subprocess.run([os.path.join(os.getcwd(), 'extract-regexes.pl'), json_tempfile.name], 
+def extract_regexes(json_tempfile, file_path):
+    output = subprocess.run(
+        [os.path.join(os.environ['VULN_REGEX_DETECTOR_ROOT'], 'src/extract/extract-regexes.pl'), 
+            json_tempfile.name], 
         capture_output=True, text=True)
-    return json.loads(output.stdout)
+    output_json = json.loads(output.stdout)
+    output_json['file'] = file_path
+    return json.dumps(output_json)
+
 
 file_path = sys.argv[1]
 js_from_html = extract_js(file_path)
 
 # create temp-js-content.js based on the location of extract-regexes.pl
-js_tempfile = tempfile.NamedTemporaryFile(suffix='.js', mode='w+t')
+js_tempfile = tempfile.NamedTemporaryFile(suffix='.js', mode='w+t', delete = False)
 js_tempfile.writelines(js_from_html)
-js_tempfile.seek(0)
+js_tempfile.close()
 
 # create temp json file to pass to the meta-program
-json_tempfile = tempfile.NamedTemporaryFile(suffix='.json', mode='w+t')
+json_tempfile = tempfile.NamedTemporaryFile(suffix='.json', mode='w+t', delete = False)
 json_tempfile.writelines(json.dumps({"file": js_tempfile.name, "language": "javascript"}))
-json_tempfile.seek(0)
+json_tempfile.close()
 
 # call the meta-program 
-output_json = extract_regexes(json_tempfile)
-output_json['file'] = file_path
-return_string = json.dumps(output_json)
-print(return_string, end = '')
+print(extract_regexes(json_tempfile, file_path), end = '')
 
 # delete the temp js and json file
-js_tempfile.close()
-json_tempfile.close()
+os.remove(js_tempfile.name)
+os.remove(json_tempfile.name)
 
