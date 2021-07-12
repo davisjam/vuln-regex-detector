@@ -28,6 +28,7 @@ my $pref = "$ENV{VULN_REGEX_DETECTOR_ROOT}/src/extract/src";
 my %language2extractor = (
   "javascript" => "$pref/javascript/extract-regexps.js",
   "python"     => "$pref/python/python-extract-regexps-wrapper.pl",
+  "html"       => "$pref/html/extract-regexps-html.py"   
 );
 
 for my $lang (keys %language2extractor) {
@@ -64,10 +65,13 @@ if (not $language) {
 }
 
 # Invoke the appropriate extractor.
+# If HTML file, extract the js part to create a new js file and pipeline it into the js extractor
+
 my $extractor = $language2extractor{$language};
 if ($extractor and -x $extractor) {
   print STDERR "$extractor '$json->{file}'\n";
   my $result = decode_json(`$extractor '$json->{file}' 2>/dev/null`);
+
   # Add the language to the output to simplify pipelining.
   $result->{language} = $language;
   print STDOUT encode_json($result) . "\n";
@@ -95,6 +99,7 @@ sub determineLanguage {
 
   # Check the 'file' command's guess.
   my ($rc, $out) = &cmd("file $file");
+
   #print "rc $rc out $out\n";
   if ($rc eq 0) {
     if ($out =~ m/(\s|\/)node(js)?\s/i) {
@@ -102,6 +107,9 @@ sub determineLanguage {
     }
     elsif ($out =~ m/\sPython\s/i) {
       $language = "python";
+    }
+    elsif ($out =~ m/\sHTML\s/i) {
+      $language = "html";
     }
   }
   # Did it work?
@@ -112,6 +120,7 @@ sub determineLanguage {
   return $language;
 }
 
+
 sub extension2language {
   my ($ext) = @_;
 
@@ -121,6 +130,9 @@ sub extension2language {
   }
   elsif (lc $ext eq "py") {
     $language = "python";
+  }
+  elsif (lc $ext eq "html") {
+    $language = "html";
   }
 
   return $language;
