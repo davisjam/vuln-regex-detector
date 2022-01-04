@@ -134,19 +134,16 @@ sub configureRXXR2 {
   else {
     &log("Setting up rxxr2");
 
-    &log("Downloading");
-    &chkcmd("wget http://www.cs.bham.ac.uk/~hxt/research/rxxr2/rxxr2.zip -O rxxr2.zip");
-    &chkcmd("unzip rxxr2.zip"); # Unzips to 'rxxr/'
-
+    &log("Cloning repo");
+    &chkcmd("git clone https://github.com/ConradIrwin/rxxr2");
     &log("Building");
-    &chkcmd("cd rxxr/code; ./build.sh; cd -");
+    &chkcmd("cd rxxr2/code; ./build.sh; cd -");
 
     &log("Cleaning up");
-    &chkcmd("mv rxxr/code/scan.bin /tmp/RXXR2-INSTALL-scan.bin");
-    &chkcmd("rm -rf rxxr/");
+    &chkcmd("mv rxxr2/code/scan.bin /tmp/RXXR2-INSTALL-scan.bin");
+    &chkcmd("rm -rf rxxr2/");
     &chkcmd("mkdir $dir");
     &chkcmd("mv /tmp/RXXR2-INSTALL-scan.bin $file");
-    &chkcmd("rm rxxr2.zip");
 
     if (not -f $file) {
       die "Error, configuring rxxr2 failed: could not find $file\n";
