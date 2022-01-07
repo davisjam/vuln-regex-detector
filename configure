@@ -128,6 +128,7 @@ sub configureRXXR2 {
   my $dir = "rathnayake-rxxr2";
   my $file = "$dir/scan.bin";
   my $clone_dir = "rxxr";
+  my $stable ="0eea5e9f0e0cde6c39e0fc12614f64edb6189cd5";
 
   if (-d $dir) {
     &log("rathnayake already installed ($ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors/$dir)");
@@ -138,7 +139,7 @@ sub configureRXXR2 {
     &log("Cloning repo");
     &chkcmd("git clone https://github.com/ConradIrwin/rxxr2 $clone_dir");
     &log("Building");
-    &chkcmd("cd $clone_dir/code; ./build.sh; cd -");
+    &chkcmd("cd $clone_dir; git checkout $stable; cd code; ./build.sh; cd ../..");
 
     &log("Cleaning up");
     &chkcmd("mv $clone_dir/code/scan.bin /tmp/RXXR2-INSTALL-scan.bin");
