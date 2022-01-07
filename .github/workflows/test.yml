@@ -1,0 +1,29 @@
+name: Vulnerable regex detector
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with: 
+          fetch-depth: '0'
+
+      - name: Run entrypoint.sh
+        run: |
+          echo SHA $GITHUB_SHA
+          echo BASE_REF $GITHUB_BASE_REF
+          echo HEAD_REF $GITHUB_HEAD_REF
+          echo REF $GITHUB_REF
+          echo REF_NAME $GITHUB_REF_NAME
+          git diff-tree --no-commit-id -r $GITHUB_SHA
+          git show --name-only --pretty=format:
+        shell: bash
