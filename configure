@@ -127,6 +127,8 @@ sub configureRXXR2 {
 
   my $dir = "rathnayake-rxxr2";
   my $file = "$dir/scan.bin";
+  my $clone_dir = "rxxr";
+  my $stable ="0eea5e9f0e0cde6c39e0fc12614f64edb6189cd5";
 
   if (-d $dir) {
     &log("rathnayake already installed ($ENV{VULN_REGEX_DETECTOR_ROOT}/src/detect/src/detectors/$dir)");
@@ -134,19 +136,16 @@ sub configureRXXR2 {
   else {
     &log("Setting up rxxr2");
 
-    &log("Downloading");
-    &chkcmd("wget http://www.cs.bham.ac.uk/~hxt/research/rxxr2/rxxr2.zip -O rxxr2.zip");
-    &chkcmd("unzip rxxr2.zip"); # Unzips to 'rxxr/'
-
+    &log("Cloning repo");
+    &chkcmd("git clone https://github.com/ConradIrwin/rxxr2 $clone_dir");
     &log("Building");
-    &chkcmd("cd rxxr/code; ./build.sh; cd -");
+    &chkcmd("cd $clone_dir; git checkout $stable; cd code; ./build.sh; cd ../..");
 
     &log("Cleaning up");
-    &chkcmd("mv rxxr/code/scan.bin /tmp/RXXR2-INSTALL-scan.bin");
-    &chkcmd("rm -rf rxxr/");
+    &chkcmd("mv $clone_dir/code/scan.bin /tmp/RXXR2-INSTALL-scan.bin");
+    &chkcmd("rm -rf $clone_dir/");
     &chkcmd("mkdir $dir");
     &chkcmd("mv /tmp/RXXR2-INSTALL-scan.bin $file");
-    &chkcmd("rm rxxr2.zip");
 
     if (not -f $file) {
       die "Error, configuring rxxr2 failed: could not find $file\n";
